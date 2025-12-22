@@ -197,6 +197,21 @@ export const fetchJobsByCategory = createAsyncThunk<
   }
 });
 
+export const toggleJobFeatured = createAsyncThunk<
+  { message: string; data: Job },
+  { jobId: string; is_featured: boolean },
+  { rejectValue: string }
+>("jobs/toggleFeatured", async ({ jobId, is_featured }, { rejectWithValue }) => {
+  try {
+    const response = await api.post(`/jobs/${jobId}/toggle-featured/`, {
+      is_featured,
+    });
+    return response as any;
+  } catch (error: any) {
+    return rejectWithValue(error?.message || "Failed to toggle featured status");
+  }
+});
+
 const jobsSlice = createSlice({
   name: "jobs",
   initialState,
@@ -438,6 +453,29 @@ const jobsSlice = createSlice({
         if (action.payload && action.payload.pagination) state.pagination = action.payload.pagination;
       })
       .addCase(fetchJobsByCategory.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    // Toggle Featured
+    builder
+      .addCase(toggleJobFeatured.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(toggleJobFeatured.fulfilled, (state, action) => {
+        state.loading = false;
+        const updatedJob = action.payload.data;
+        const index = state.jobs.findIndex((job) => job.id === updatedJob.id);
+        if (index !== -1) {
+          state.jobs[index] = { ...state.jobs[index], ...updatedJob };
+        }
+        if (state.currentJob?.id === updatedJob.id) {
+          state.currentJob = { ...state.currentJob, ...updatedJob };
+        }
+        state.successMessage = action.payload.message;
+      })
+      .addCase(toggleJobFeatured.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

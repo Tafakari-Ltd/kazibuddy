@@ -33,6 +33,7 @@ const JobsManagementPage = () => {
     handleCreateJob,
     handleSetFilters,
     handleClearState,
+    handleToggleJobFeatured,
   } = useJobs();
 
   const { categories, handleFetchCategories } = useCategories();
@@ -140,6 +141,11 @@ const JobsManagementPage = () => {
       setShowCreateModal(false);
       handleFetchJobs();
     }
+  };
+
+  const handleToggleFeatured = async (jobId: string, isFeatured: boolean) => {
+    await handleToggleJobFeatured(jobId, isFeatured);
+    handleFetchJobs();
   };
 
   const clearFilters = () => {
@@ -253,6 +259,7 @@ const JobsManagementPage = () => {
                       onEdit={handleEditClick}
                       onDelete={handleDeleteClick}
                       onStatusChange={handleStatusChange}
+                      onToggleFeatured={handleToggleFeatured}
                     />
                   ))}
                 </div>

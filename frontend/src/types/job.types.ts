@@ -50,6 +50,7 @@ export interface Job {
   status: JobStatus;
   admin_approved: boolean;
   visibility: JobVisibility;
+  is_featured?: boolean;
   created_at: string;
   updated_at?: string;
 }

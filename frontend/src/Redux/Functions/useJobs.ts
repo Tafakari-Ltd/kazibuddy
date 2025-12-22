@@ -13,6 +13,7 @@ import {
   updateJobStatus,
   fetchJobsByEmployer,
   fetchJobsByCategory,
+  toggleJobFeatured,
   clearState,
   clearCurrentJob,
   setFilters,
@@ -147,6 +148,16 @@ export const useJobs = () => {
     return pagination.page === pagination.total_pages;
   };
 
+  const handleToggleJobFeatured = useCallback(
+    async (jobId: string, is_featured: boolean) => {
+      const result = await dispatch(
+        toggleJobFeatured({ jobId, is_featured }),
+      );
+      return result.payload;
+    },
+    [dispatch],
+  );
+
   return {
     jobs,
     featuredJobs,
@@ -181,5 +192,6 @@ export const useJobs = () => {
     getTotalPages,
     isFirstPage,
     isLastPage,
+    handleToggleJobFeatured,
   };
 };

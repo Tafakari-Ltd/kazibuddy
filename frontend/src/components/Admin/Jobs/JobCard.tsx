@@ -10,6 +10,7 @@ import {
   Trash2,
   Pause,
   Play,
+  Star,
 } from "lucide-react";
 import { Job, JobStatus, JOB_STATUS_OPTIONS, URGENCY_LEVEL_OPTIONS } from "@/types/job.types";
 
@@ -20,9 +21,10 @@ interface JobCardProps {
   onEdit: (jobId: string) => void; 
   onDelete: (jobId: string) => void;
   onStatusChange: (jobId: string, status: JobStatus) => void;
+  onToggleFeatured: (jobId: string, isFeatured: boolean) => void;
 }
 
-const JobCard: React.FC<JobCardProps> = ({ job, categoryName, onView, onEdit, onDelete, onStatusChange }) => {
+const JobCard: React.FC<JobCardProps> = ({ job, categoryName, onView, onEdit, onDelete, onStatusChange, onToggleFeatured }) => {
   const getStatusColor = (status: string) => JOB_STATUS_OPTIONS.find((o) => o.value === status)?.color || "bg-gray-100 text-gray-600";
   const getUrgencyColor = (urgency: string) => URGENCY_LEVEL_OPTIONS.find((o) => o.value === urgency)?.color || "bg-gray-100 text-gray-600";
 
@@ -46,6 +48,12 @@ const JobCard: React.FC<JobCardProps> = ({ job, categoryName, onView, onEdit, on
                 <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
                   {categoryName}
                 </span>
+                {job.is_featured && (
+                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200 flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-current" />
+                    Featured
+                  </span>
+                )}
               </div>
 
               <p className="text-gray-600 text-sm mb-3 line-clamp-2">{job.description}</p>
@@ -89,6 +97,14 @@ const JobCard: React.FC<JobCardProps> = ({ job, categoryName, onView, onEdit, on
                   <Play className="w-4 h-4" />
                 </button>
               ) : null}
+
+              <button 
+                onClick={() => onToggleFeatured(job.id, !job.is_featured)} 
+                className={`${job.is_featured ? "text-yellow-500 hover:text-yellow-600" : "text-gray-400 hover:text-yellow-500"} p-2 rounded-lg hover:bg-yellow-50 transition-colors`} 
+                title={job.is_featured ? "Unfeature Job" : "Feature Job"}
+              >
+                <Star className={`w-4 h-4 ${job.is_featured ? "fill-current" : ""}`} />
+              </button>
             </div>
           </div>
         </div>
