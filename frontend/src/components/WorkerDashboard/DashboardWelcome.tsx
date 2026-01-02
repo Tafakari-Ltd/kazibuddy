@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { Briefcase, TrendingUp } from "lucide-react";
 
 interface DashboardWelcomeProps {
   userName: string;
@@ -19,33 +20,37 @@ const DashboardWelcome: React.FC<DashboardWelcomeProps> = ({
   showCompleteProfileBtn,
 }) => {
   return (
-    <div className="mb-8 bg-gradient-to-r from-red-900 to-red-700 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden container">
-      <div className="relative z-10">
-        <h1 className="text-3xl font-bold mb-2">
-          Welcome back, {userName}! 👋
-        </h1>
-        <p className="text-red-100 max-w-2xl">
-          You have <span className="font-semibold text-white">{availableJobsCount} active jobs</span> waiting for you today.
-          Your profile is <span className="font-semibold text-white">{profileCompletion}% complete</span>.
-        </p>
-        <div className="mt-6 flex gap-3">
+    <div className="mb-6 bg-gradient-to-r from-red-600 to-red-700 rounded-xl p-5 text-white shadow-md relative overflow-hidden">
+      <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex-1">
+          <h1 className="text-xl md:text-2xl font-bold mb-1">
+            Welcome back, {userName}! 👋
+          </h1>
+          <p className="text-red-100 text-sm">
+            <span className="font-semibold text-white">{availableJobsCount} jobs</span> available • 
+            Profile <span className="font-semibold text-white">{profileCompletion}%</span> complete
+          </p>
+        </div>
+        <div className="flex gap-2">
           <button
             onClick={onBrowseJobs}
-            className="bg-white text-red-900 px-5 py-2 rounded-lg font-semibold hover:bg-red-50 transition shadow-sm"
+            className="bg-white text-red-700 px-4 py-2 rounded-lg font-medium hover:bg-red-50 transition text-sm flex items-center gap-2"
           >
+            <Briefcase className="w-4 h-4" />
             Browse Jobs
           </button>
-          {showCompleteProfileBtn && (
+          {showCompleteProfileBtn && profileCompletion < 100 && (
             <button
               onClick={onCompleteProfile}
-              className="bg-red-800 text-white border border-red-400 px-5 py-2 rounded-lg font-medium hover:bg-red-900 transition"
+              className="bg-red-800 text-white border border-red-500 px-4 py-2 rounded-lg font-medium hover:bg-red-900 transition text-sm flex items-center gap-2"
             >
+              <TrendingUp className="w-4 h-4" />
               Complete Profile
             </button>
           )}
         </div>
       </div>
-      <div className="absolute right-0 top-0 h-full w-1/3 bg-white/10 transform skew-x-12 translate-x-12"></div>
+      <div className="absolute right-0 top-0 h-full w-1/3 bg-white/5 transform skew-x-12 translate-x-12"></div>
     </div>
   );
 };
