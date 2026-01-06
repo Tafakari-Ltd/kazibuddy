@@ -1,6 +1,8 @@
+
 "use client";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "@/lib/axios";
+import axios from "axios"; 
 import type { 
   ILoginResponse, 
   RegisterFormData, 
@@ -32,6 +34,7 @@ const removeAuthCookie = () => {
   }
 };
 
+
 export const registerUser = createAsyncThunk<
   { message: string; user_id: string },
   RegisterFormData,
@@ -50,11 +53,9 @@ export const registerUser = createAsyncThunk<
     });
     return response as any;
   } catch (err: any) {
-    // Only return field errors if they actually exist and are not empty
     if (err?.fieldErrors && Object.keys(err.fieldErrors).length > 0) {
       return rejectWithValue(JSON.stringify({ message: "Validation failed", fieldErrors: err.fieldErrors }));
     }
-    // Fallback to the message
     return rejectWithValue(err?.message || "Registration failed");
   }
 });
@@ -109,7 +110,6 @@ export const login = createAsyncThunk<
     const { access: accessToken, refresh: refreshToken } = res.tokens;
     const userId = res.user_id;
 
-    // Set cookie for middleware
     setAuthCookie(accessToken);
 
     const userFromApi = await api.get("/accounts/me/", {
@@ -126,7 +126,6 @@ export const login = createAsyncThunk<
   } catch (err: any) {
     let errorMessage = err?.message || "Login failed";
     
-    // Handle 401 Unauthorized specifically
     if (err?.status === 401 || err?.response?.status === 401) {
       errorMessage = "Invalid email or password";
     }
@@ -166,6 +165,78 @@ export const approveUser = createAsyncThunk<
   }
 });
 
+// === UPDATED GOOGLE LOGIN LOGIC ===
+export const loginWithGoogle = createAsyncThunk<
+  { accessToken: string; refreshToken: string; userId: string; user: any; userCreated: boolean },
+  { accessToken: string },
+  { rejectValue: string }
+>("auth/loginWithGoogle", async ({ accessToken: googleToken }, { rejectWithValue }) => {
+  try {
+    const res = await api.post("/v1/auth/google/", {
+      access_token: googleToken, 
+    });
+
+    const data = res as any;
+    
+    let accessToken, refreshToken;
+    let userId = data.user_id;
+    
+    let user = {
+        ...data.user_info,
+        full_name: data.user_info?.name || data.user?.name || "",
+        ...data.user
+    };
+    let userCreated = data.user_created || false;
+
+    if (data.tokens) {
+        accessToken = data.tokens.access;
+        refreshToken = data.tokens.refresh;
+    } else if (data.access) {
+        accessToken = data.access;
+        refreshToken = data.refresh;
+    } else if (data.key) {
+        accessToken = data.key;
+    }
+
+    if (!accessToken) return rejectWithValue("Invalid response from server");
+
+    // Persist tokens immediately
+    setAuthCookie(accessToken);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("accessToken", accessToken);
+      if (refreshToken) sessionStorage.setItem("refreshToken", refreshToken);
+    }
+    
+    // FETCH PROFILE
+    try {
+      const baseURL = process.env.NEXT_PUBLIC_BASE_URL || "";
+      const meResponse = await axios.get(`${baseURL}/accounts/me/`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      
+      const userFromApi = meResponse.data;
+      user = { ...user, ...userFromApi };
+      userId = user.id || user.pk || userId;
+    } catch (error: any) {
+      console.warn("Profile fetch failed (likely unverified/new user). Proceeding with Google info.", error);
+     
+    }
+
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("user", JSON.stringify(user));
+    }
+
+    return { accessToken, refreshToken, userId, user, userCreated };
+  } catch (err: any) {
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("accessToken");
+      sessionStorage.removeItem("refreshToken");
+      removeAuthCookie();
+    }
+    return rejectWithValue(err.message || "Google login failed");
+  }
+});
+
 const initialState: AuthState = {
   accessToken: null,
   refreshToken: null,
@@ -189,11 +260,11 @@ const authSlice = createSlice({
       const user = sessionStorage.getItem("user");
       const isAuthenticated = sessionStorage.getItem("isAuthenticated");
 
-      if (accessToken && refreshToken && userId && isAuthenticated === "true") {
+      if (accessToken && userId && isAuthenticated === "true") {
         state.accessToken = accessToken;
-        state.refreshToken = refreshToken;
+        state.refreshToken = refreshToken && refreshToken !== "undefined" ? refreshToken : null;
         state.userId = userId;
-        state.user = user ? JSON.parse(user) : null;
+        state.user = user && user !== "undefined" ? JSON.parse(user) : null;
         state.isAuthenticated = true;
       }
     },
@@ -215,6 +286,7 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+     
       .addCase(login.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -234,6 +306,30 @@ const authSlice = createSlice({
         sessionStorage.setItem("isAuthenticated", "true");
       })
       .addCase(login.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(loginWithGoogle.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(loginWithGoogle.fulfilled, (state, action) => {
+        state.loading = false;
+        state.accessToken = action.payload.accessToken;
+        state.refreshToken = action.payload.refreshToken;
+        state.userId = action.payload.userId;
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+
+        sessionStorage.setItem("accessToken", action.payload.accessToken);
+        if (action.payload.refreshToken) {
+            sessionStorage.setItem("refreshToken", action.payload.refreshToken);
+        }
+        sessionStorage.setItem("userId", action.payload.userId);
+        sessionStorage.setItem("user", JSON.stringify(action.payload.user));
+        sessionStorage.setItem("isAuthenticated", "true");
+      })
+      .addCase(loginWithGoogle.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })

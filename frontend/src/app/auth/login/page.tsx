@@ -5,12 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FcGoogle } from "react-icons/fc";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
-import { login } from "@/Redux/Features/authSlice";
+import { login, loginWithGoogle } from "@/Redux/Features/authSlice";
 import { fetchUserWorkerProfile } from "@/Redux/Features/workerProfilesSlice"; 
 import { isApprovalNeededError } from "@/lib/approvalUtils";
 import { toast } from "sonner";
 import { AuthLayout } from "@/component/Authentication/AuthLayout";
-
+import { useGoogleLogin } from "@react-oauth/google";
 import { AppDispatch, RootState } from "@/Redux/Store/Store";
 
 const LoginPage: React.FC = () => {
@@ -21,6 +21,79 @@ const LoginPage: React.FC = () => {
   const { loading, error } = useSelector((state: RootState) => state.auth);
   const [formError, setFormError] = useState<string>("");
 
+  const handleSuccessfulLogin = async (user: any) => {
+    const pendingJobApplication = sessionStorage.getItem('pendingJobApplication');
+    const redirectAfterLogin = sessionStorage.getItem('redirectAfterLogin');
+    const returnTo = searchParams.get("returnTo");
+    
+    const isAdmin =
+      user?.is_staff ||
+      user?.is_superuser ||
+      user?.role === 'admin' ||
+      user?.user_type === 'admin';
+
+    if (isAdmin) {
+      if (pendingJobApplication) sessionStorage.removeItem('pendingJobApplication');
+      if (redirectAfterLogin) sessionStorage.removeItem('redirectAfterLogin');
+      router.push('/admin');
+      return;
+    }
+
+    if (pendingJobApplication) {
+      try {
+        const userId = user.user_id || user.id;
+        const profileResult = await dispatch(fetchUserWorkerProfile(userId)).unwrap();
+
+        if (profileResult) {
+          const targetUrl = redirectAfterLogin || '/';
+          router.push(targetUrl);
+          toast.success('Welcome back! You can now complete your application.');
+        } else {
+          router.push('/worker?setup=1');
+          toast.info('Please create a worker profile before applying for jobs');
+        }
+      } catch (err) {
+        router.push('/worker?setup=1');
+        toast.info('Please create a worker profile before applying for jobs');
+      }
+    } 
+    else if (returnTo) {
+      router.push(returnTo);
+    } else if (redirectAfterLogin) {
+      router.push(redirectAfterLogin);
+      sessionStorage.removeItem('redirectAfterLogin');
+    } else {
+      if (user?.user_type === 'employer') {
+        router.push('/employer');
+      } else {
+        router.push('/worker');
+      }
+    }
+  };
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        const result = await dispatch(
+          loginWithGoogle({ accessToken: tokenResponse.access_token })
+        ).unwrap();
+
+        if (result.userCreated) {
+           toast.success("Account created! Please complete your profile.");
+           router.push('/worker?setup=1'); 
+        } else {
+           toast.success("Logged in successfully via Google!");
+           handleSuccessfulLogin(result.user);
+        }
+      } catch (err: any) {
+        toast.error(err || "Google login failed");
+      }
+    },
+    onError: () => {
+      toast.error("Google login failed to start");
+    },
+  });
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormError("");
@@ -30,67 +103,8 @@ const LoginPage: React.FC = () => {
     const password = formData.get("password") as string;
 
     try {
-      // 1. Perform Login
       const result = await dispatch(login({ email, password })).unwrap();
-      
-      // 2. Check Intent
-      const pendingJobApplication = sessionStorage.getItem('pendingJobApplication');
-      const redirectAfterLogin = sessionStorage.getItem('redirectAfterLogin');
-      const returnTo = searchParams.get("returnTo");
-      const user = result.user;
-      
-      const isAdmin =
-        user?.is_staff ||
-        user?.is_superuser ||
-        user?.role === 'admin' ||
-        user?.user_type === 'admin';
-
-      // 3. Handle Routing Logic
-      if (isAdmin) {
-        // Admin always goes to admin dashboard
-        if (pendingJobApplication) sessionStorage.removeItem('pendingJobApplication');
-        if (redirectAfterLogin) sessionStorage.removeItem('redirectAfterLogin');
-        router.push('/admin');
-        return;
-      }
-
-      // User was trying to Apply for a Job
-      if (pendingJobApplication) {
-        try {
-          // Check if they have a worker profile
-          const userId = user.user_id || user.id;
-        
-          const profileResult = await dispatch(fetchUserWorkerProfile(userId)).unwrap();
-
-          if (profileResult) {
-            const targetUrl = redirectAfterLogin || '/';
-            router.push(targetUrl);
-            toast.success('Welcome back! You can now complete your application.');
-           
-          } else {
-            router.push('/worker?setup=1');
-            toast.info('Please create a worker profile before applying for jobs');
-          }
-        } catch (err) {
-         
-          router.push('/worker?setup=1');
-          toast.info('Please create a worker profile before applying for jobs');
-        }
-      } 
-      //Normal Redirects
-      else if (returnTo) {
-        router.push(returnTo);
-      } else if (redirectAfterLogin) {
-        router.push(redirectAfterLogin);
-        sessionStorage.removeItem('redirectAfterLogin');
-      } else {
-        
-        if (user?.user_type === 'employer') {
-          router.push('/employer');
-        } else {
-          router.push('/worker');
-        }
-      }
+      handleSuccessfulLogin(result.user);
 
     } catch (err: any) {
       console.log('Login error:', err);
@@ -105,7 +119,6 @@ const LoginPage: React.FC = () => {
      
       const errorLower = errorMessage.toLowerCase();
       
-      // Check for approval/activation errors
       if (isApprovalNeededError(errorMessage)) {
         toast.info(
           "Your account is pending admin approval. Please wait for approval notification via email.",
@@ -115,21 +128,18 @@ const LoginPage: React.FC = () => {
           "Your account is pending admin approval. You will be able to login once approved."
         );
       } 
-      // Check for email verification errors
       else if (errorLower.includes('verify') || 
                errorLower.includes('verification') ||
                errorLower.includes('not verified')) {
         setFormError("Please verify your email address before logging in.");
         toast.warning("Email verification required");
         
-        // Optionally redirect to verification page if we have the email
         if (email) {
           setTimeout(() => {
             router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
           }, 2000);
         }
       }
-      // Check for specific credential errors
       else if (errorLower.includes('no active account found')) {
         setFormError("No account found with this email address.");
       }
@@ -150,7 +160,6 @@ const LoginPage: React.FC = () => {
       }
       
       if (!isApprovalNeededError(errorMessage)) {
-      
         if (!formError) {
            toast.error(errorMessage);
         }
@@ -250,11 +259,11 @@ const LoginPage: React.FC = () => {
           Use your social account to log in
         </p>
 
-        {/* Google Sign In */}
         <button
           className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-300 text-gray-700 font-medium py-2.5 px-4 rounded-lg hover:bg-gray-50 transition mb-4"
-          onClick={() => { }}
+          onClick={() => googleLogin()}
           disabled={loading}
+          type="button"
         >
           <FcGoogle size={24} />
           Continue with Google

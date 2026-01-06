@@ -1,7 +1,8 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSelector } from "react-redux";
 import { RootState } from "@/Redux/Store/Store";
 import { toast } from "sonner";
@@ -26,6 +27,7 @@ const allowedUnauthenticatedPaths = [
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [authorized, setAuthorized] = useState<null | boolean>(null);
   
   const { user, isAuthenticated: reduxIsAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -44,10 +46,46 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       return;
     }
 
-    // 2. Role-based Access Control (RBAC)
+    // Role-based Access Control & Profile Verification
     if (isAuthenticated && user) {
       const userRole = user.role || user.user_type;
       
+      
+      const isProfileComplete = user.full_name && user.phone_number;
+     
+      const isVerified = user.is_verified || user.email_verified || user.is_active; 
+      
+      
+      const isSetupPage = searchParams.get("setup") === "1";
+
+     
+      if (!isProfileComplete && !user.is_superuser) {
+          if (!isSetupPage) {
+              if (userRole === "worker") router.replace("/worker?setup=1");
+              else if (userRole === "employer") router.replace("/employer?setup=1");
+              else router.replace("/worker?setup=1"); // Default
+              
+              setAuthorized(false);
+              return;
+          }
+         
+          setAuthorized(true);
+          return;
+      }
+
+      
+      if (!isVerified && !user.is_superuser && !isSetupPage) {
+           toast.info("Account pending approval. Please wait for verification.");
+           
+           if (userRole === "worker") router.replace("/worker?setup=1");
+           else if (userRole === "employer") router.replace("/employer?setup=1");
+           
+           setAuthorized(false);
+           return;
+      }
+
+     
+
       // Admin Routes Protection
       if (pathname.startsWith("/admin") || pathname.startsWith("/adminpanel")) {
         const isAdmin = user.is_staff || user.is_superuser || userRole === "admin";
@@ -91,7 +129,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     }
 
     setAuthorized(true);
-  }, [router, pathname, user, reduxIsAuthenticated]);
+  }, [router, pathname, user, reduxIsAuthenticated, searchParams]);
 
   if (authorized === null) {
     return null; 

@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Users, Briefcase } from "lucide-react";
+import { GoogleAuthButton } from "@/component/Authentication/GoogleAuthButton";
 
 const SignupPage: React.FC = () => {
   const router = useRouter();
@@ -151,6 +152,20 @@ const SignupPage: React.FC = () => {
                   </button>
                 </div>
               </div>
+            </div>
+
+            <div className="mb-6">
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+              <GoogleAuthButton />
             </div>
 
             <div className="text-center text-sm text-gray-600">
