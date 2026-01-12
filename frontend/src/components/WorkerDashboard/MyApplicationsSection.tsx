@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMyApplications } from "../../Redux/Functions/jobs";
-import { JobApplicationCard } from "../JobApplication";
+import ApplicationCard from "./ApplicationCard";
 import { toast } from "sonner";
 
 interface MyApplicationsSectionProps {
@@ -323,16 +323,13 @@ export const MyApplicationsSection: React.FC<MyApplicationsSectionProps> = ({
           </button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {displayApplications.map((application) => (
-            <JobApplicationCard
+            <ApplicationCard
               key={application.id}
               application={application as any}
               onView={handleView}
-              onUpdate={handleUpdate}
               onDelete={handleDelete}
-              showJobDetails={true}
-              showWorkerDetails={false}
             />
           ))}
 

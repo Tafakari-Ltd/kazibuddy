@@ -165,7 +165,6 @@ export const approveUser = createAsyncThunk<
   }
 });
 
-// === UPDATED GOOGLE LOGIN LOGIC ===
 export const loginWithGoogle = createAsyncThunk<
   { accessToken: string; refreshToken: string; userId: string; user: any; userCreated: boolean },
   { accessToken: string },
