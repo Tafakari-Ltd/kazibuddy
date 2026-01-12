@@ -2,7 +2,7 @@
 import React from "react";
 import { Briefcase, TrendingUp } from "lucide-react";
 
-interface DashboardWelcomeProps {
+interface WorkerDashboardWelcomeProps {
   userName: string;
   availableJobsCount: number;
   profileCompletion: number;
@@ -11,7 +11,7 @@ interface DashboardWelcomeProps {
   showCompleteProfileBtn: boolean;
 }
 
-const DashboardWelcome: React.FC<DashboardWelcomeProps> = ({
+const WorkerDashboardWelcome: React.FC<WorkerDashboardWelcomeProps> = ({
   userName,
   availableJobsCount,
   profileCompletion,
@@ -55,4 +55,4 @@ const DashboardWelcome: React.FC<DashboardWelcomeProps> = ({
   );
 };
 
-export default DashboardWelcome;
+export default WorkerDashboardWelcome;
