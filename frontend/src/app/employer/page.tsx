@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import EmployerProfileForm from "@/components/Employer/EmployerProfileForm";
 import JobEditModal from "@/component/JobEditModal/JobEditModal";
 import JobPostingModal from "@/component/JobPostingModal/JobPostingModal";
+import WorkerProfileModal from "@/components/Employer/Dashboard/WorkerProfileModal";
+import StageAdvancementModal from "@/components/Employer/Dashboard/StageAdvancementModal";
 import {
   EmployerDashboardHeader,
   ProfileWarningBanner,
@@ -112,12 +114,16 @@ const EmployerDashboardPage = () => {
   const [showJobPostModal, setShowJobPostModal] = useState(false);
   const [showDeleteJobModal, setShowDeleteJobModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showWorkerProfileModal, setShowWorkerProfileModal] = useState(false);
+  const [showStageAdvancementModal, setShowStageAdvancementModal] = useState(false);
 
   // Selected items
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
   const [jobToEdit, setJobToEdit] = useState<Job | null>(null);
   const [applicationToReject, setApplicationToReject] = useState<Application | null>(null);
+  const [applicationToView, setApplicationToView] = useState<Application | null>(null);
+  const [applicationToAdvance, setApplicationToAdvance] = useState<Application | null>(null);
   const [rejectionReason, setRejectionReason] = useState<string>("");
 
   // Initialize
@@ -261,6 +267,46 @@ const EmployerDashboardPage = () => {
       setShowDeleteJobModal(false);
       setJobToDelete(null);
     }
+  };
+
+  // Application handlers
+  const handleViewWorkerProfile = (application: Application) => {
+    setApplicationToView(application);
+    setShowWorkerProfileModal(true);
+  };
+
+  const handleAdvanceApplication = (application: Application) => {
+    setApplicationToAdvance(application);
+    setShowStageAdvancementModal(true);
+  };
+
+  const confirmAdvanceStage = async (newStage: ApplicationStage, notes?: string) => {
+    if (!applicationToAdvance) return;
+
+    try {
+      // TODO: Implement API call to update application stage
+      toast.success(`Application advanced to ${newStage}`);
+      
+      // Update local state
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === applicationToAdvance.id
+            ? { ...app, stage: newStage }
+            : app
+        )
+      );
+
+      setShowStageAdvancementModal(false);
+      setApplicationToAdvance(null);
+    } catch (error) {
+      toast.error("Failed to advance application");
+      console.error(error);
+    }
+  };
+
+  const handleRejectApplication = (application: Application) => {
+    setApplicationToReject(application);
+    setShowRejectModal(true);
   };
 
   // Computed values
@@ -426,10 +472,9 @@ const EmployerDashboardPage = () => {
               stages={STAGES}
               loading={applicationsLoading}
               onEmailCandidate={(email) => (window.location.href = `mailto:${email}`)}
-              onRejectApplication={(app) => {
-                setApplicationToReject(app);
-                setShowRejectModal(true);
-              }}
+              onAdvanceApplication={handleAdvanceApplication}
+              onRejectApplication={handleRejectApplication}
+              onViewProfile={handleViewWorkerProfile}
             />
           </div>
         )}
@@ -501,6 +546,40 @@ const EmployerDashboardPage = () => {
             if (userProfile?.id) handleFetchJobsByEmployer(userProfile.id);
             toast.success("Job posted successfully!");
           }}
+        />
+      )}
+
+      {/* Worker Profile Modal */}
+      {applicationToView && (
+        <WorkerProfileModal
+          application={applicationToView}
+          isOpen={showWorkerProfileModal}
+          onClose={() => {
+            setShowWorkerProfileModal(false);
+            setApplicationToView(null);
+          }}
+          onAdvanceStage={() => {
+            setShowWorkerProfileModal(false);
+            handleAdvanceApplication(applicationToView);
+          }}
+          onReject={() => {
+            setShowWorkerProfileModal(false);
+            handleRejectApplication(applicationToView);
+          }}
+        />
+      )}
+
+      {/* Stage Advancement Modal */}
+      {applicationToAdvance && (
+        <StageAdvancementModal
+          application={applicationToAdvance}
+          stages={STAGES}
+          isOpen={showStageAdvancementModal}
+          onClose={() => {
+            setShowStageAdvancementModal(false);
+            setApplicationToAdvance(null);
+          }}
+          onConfirm={confirmAdvanceStage}
         />
       )}
     </div>

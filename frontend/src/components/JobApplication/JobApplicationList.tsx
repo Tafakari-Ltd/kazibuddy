@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   JobApplicationWithDetails,
   ApplicationStatus,
@@ -31,6 +32,8 @@ const statusOptions: { value: ApplicationStatus; label: string }[] = [
   { value: "withdrawn", label: "Withdrawn" },
 ];
 
+const ITEMS_PER_PAGE = 9;
+
 export const JobApplicationList: React.FC<JobApplicationListProps> = ({
   applications,
   loading = false,
@@ -50,11 +53,13 @@ export const JobApplicationList: React.FC<JobApplicationListProps> = ({
     search: "",
     ordering: "-applied_at",
   });
+  const [currentPage, setCurrentPage] = useState(1);
 
   const handleFilterChange = (newFilters: Partial<ApplicationQueryParams>) => {
     const updatedFilters = { ...filters, ...newFilters };
     setFilters(updatedFilters);
     onFilter?.(updatedFilters);
+    setCurrentPage(1); // Reset to page 1 when filters change
   };
 
   const handleStatusFilter = (status: ApplicationStatus) => {
@@ -82,7 +87,26 @@ export const JobApplicationList: React.FC<JobApplicationListProps> = ({
     };
     setFilters(clearedFilters);
     onFilter?.(clearedFilters);
+    setCurrentPage(1);
   };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Pagination calculations
+  const totalPages = Math.ceil(applications.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentApplications = applications.slice(startIndex, endIndex);
+
+  // Reset to page 1 when applications length changes significantly
+  React.useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [applications.length, currentPage, totalPages]);
 
   // Loading state
   if (loading) {
@@ -267,7 +291,7 @@ export const JobApplicationList: React.FC<JobApplicationListProps> = ({
       {applications.length > 0 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-600">
-            {applications.length} application
+            Showing {startIndex + 1}-{Math.min(endIndex, applications.length)} of {applications.length} application
             {applications.length !== 1 ? "s" : ""}
           </p>
         </div>
@@ -275,19 +299,71 @@ export const JobApplicationList: React.FC<JobApplicationListProps> = ({
 
       {/* Applications Grid */}
       {applications.length > 0 ? (
-        <div className="grid gap-4 md:gap-6">
-          {applications.map((application) => (
-            <JobApplicationCard
-              key={application.id}
-              application={application}
-              onView={onView}
-              onUpdate={onUpdate}
-              onDelete={onDelete}
-              showJobDetails={showJobDetails}
-              showWorkerDetails={showWorkerDetails}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-4 md:gap-6">
+            {currentApplications.map((application) => (
+              <JobApplicationCard
+                key={application.id}
+                application={application}
+                onView={onView}
+                onUpdate={onUpdate}
+                onDelete={onDelete}
+                showJobDetails={showJobDetails}
+                showWorkerDetails={showWorkerDetails}
+              />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-6">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+
+              <div className="flex gap-1">
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                        currentPage === pageNum
+                          ? "bg-blue-600 text-white"
+                          : "border border-gray-300 hover:bg-gray-50"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-12 text-center">
           <div className="mx-auto max-w-md">

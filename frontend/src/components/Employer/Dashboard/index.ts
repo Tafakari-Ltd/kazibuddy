@@ -11,6 +11,8 @@ export { default as JobViewModal } from "./JobViewModal";
 export { default as DeleteJobModal } from "./DeleteJobModal";
 export { default as RejectApplicationModal } from "./RejectApplicationModal";
 export { default as SettingsView } from "./SettingsView";
+export { default as WorkerProfileModal } from "./WorkerProfileModal";
+export { default as StageAdvancementModal } from "./StageAdvancementModal";
 
 // Export utils
 export * from "./employerDashboardUtils";
