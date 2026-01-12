@@ -183,7 +183,9 @@ export const useMyApplications = () => {
 
   const fetchApplications = useCallback(
     (params?: ApplicationQueryParams) => {
-      dispatch(fetchMyApplications({ ...params, per_page: 1000 }));
+      // Use provided params or default to per_page: 1000 for backwards compatibility
+      const queryParams = params || { per_page: 1000 };
+      dispatch(fetchMyApplications(queryParams));
     },
     [dispatch],
   );
@@ -202,7 +204,7 @@ export const useMyApplications = () => {
     [dispatch],
   );
 
-  // Auto-fetch on mount
+  // Auto-fetch on mount with default params
   useEffect(() => {
     fetchApplications();
   }, [fetchApplications]);

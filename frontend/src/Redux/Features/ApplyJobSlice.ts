@@ -233,6 +233,19 @@ const applyJobSlice = createSlice({
       .addCase(fetchMyApplications.fulfilled, (state, action) => {
         state.isLoading = false;
         state.myApplications = action.payload.applications;
+        // Update pagination if available in response
+        if (action.payload.page !== undefined) {
+          state.pagination.currentPage = action.payload.page;
+        }
+        if (action.payload.per_page !== undefined) {
+          state.pagination.itemsPerPage = action.payload.per_page;
+        }
+        if (action.payload.total !== undefined) {
+          state.pagination.totalItems = action.payload.total;
+          state.pagination.totalPages = Math.ceil(
+            action.payload.total / (action.payload.per_page || state.pagination.itemsPerPage)
+          );
+        }
       })
       .addCase(fetchMyApplications.rejected, (state, action) => {
         state.isLoading = false;

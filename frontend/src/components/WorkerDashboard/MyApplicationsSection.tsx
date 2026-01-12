@@ -1,16 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useMyApplications } from "../../Redux/Functions/jobs";
 import ApplicationCard from "./ApplicationCard";
 import { toast } from "sonner";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface MyApplicationsSectionProps {
   className?: string;
   showAll?: boolean; // If false, shows only recent applications
   maxItems?: number;
 }
+
+const ITEMS_PER_PAGE = 9;
 
 export const MyApplicationsSection: React.FC<MyApplicationsSectionProps> = ({
   className = "",
@@ -22,6 +25,8 @@ export const MyApplicationsSection: React.FC<MyApplicationsSectionProps> = ({
     applications,
     isLoading,
     apiError,
+    pagination,
+    fetchApplications,
     updateApplicationById,
     deleteApplicationById,
   } = useMyApplications();
@@ -29,22 +34,33 @@ export const MyApplicationsSection: React.FC<MyApplicationsSectionProps> = ({
   const [statusFilter, setStatusFilter] = useState<
     "all" | "pending" | "reviewed" | "accepted" | "rejected"
   >("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const filteredApplications =
-    statusFilter === "all"
-      ? applications
-      : applications.filter((app) => app.status === statusFilter);
+  // Fetch applications with pagination when showAll is true
+  useEffect(() => {
+    if (showAll) {
+      const params = {
+        page: currentPage,
+        per_page: ITEMS_PER_PAGE,
+        ...(statusFilter !== "all" && { status: [statusFilter] }),
+      };
+      fetchApplications(params);
+    }
+  }, [currentPage, statusFilter, showAll, fetchApplications]);
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    if (showAll) {
+      setCurrentPage(1);
+    }
+  }, [statusFilter, showAll]);
 
   const displayApplications = showAll
-    ? filteredApplications
-    : filteredApplications.slice(0, maxItems);
+    ? applications
+    : applications.slice(0, maxItems);
 
   const handleView = (applicationId: string) => {
     router.push(`/applications/${applicationId}`);
-  };
-
-  const handleUpdate = (applicationId: string) => {
-    router.push(`/applications/${applicationId}/edit`);
   };
 
   const handleDelete = async (applicationId: string) => {
@@ -57,6 +73,14 @@ export const MyApplicationsSection: React.FC<MyApplicationsSectionProps> = ({
     try {
       await deleteApplicationById(applicationId).unwrap();
       toast.success("Application removed successfully");
+      // Refetch current page
+      if (showAll) {
+        fetchApplications({
+          page: currentPage,
+          per_page: ITEMS_PER_PAGE,
+          ...(statusFilter !== "all" && { status: [statusFilter] }),
+        });
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to remove application");
     }
@@ -66,14 +90,21 @@ export const MyApplicationsSection: React.FC<MyApplicationsSectionProps> = ({
     router.push("/applications");
   };
 
-  // Get application stats
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Get application stats 
   const stats = {
-    total: applications.length,
+    total: showAll && pagination?.totalItems ? pagination.totalItems : applications.length,
     pending: applications.filter((app) => app.status === "pending").length,
     reviewed: applications.filter((app) => app.status === "reviewed").length,
     accepted: applications.filter((app) => app.status === "accepted").length,
     rejected: applications.filter((app) => app.status === "rejected").length,
   };
+
+  const totalPages = showAll && pagination?.totalPages ? pagination.totalPages : 1;
 
   if (isLoading) {
     return (
@@ -293,6 +324,18 @@ export const MyApplicationsSection: React.FC<MyApplicationsSectionProps> = ({
         </div>
       )}
 
+      {/* Results Summary - Show when in paginated mode */}
+      {showAll && displayApplications.length > 0 && (
+        <div className="flex items-center justify-between text-sm text-gray-600">
+          <p>
+            Showing{" "}
+            {((currentPage - 1) * ITEMS_PER_PAGE) + 1} -{" "}
+            {Math.min(currentPage * ITEMS_PER_PAGE, stats.total)} of{" "}
+            {stats.total} application{stats.total !== 1 ? "s" : ""}
+          </p>
+        </div>
+      )}
+
       {/* Applications List */}
       {displayApplications.length === 0 ? (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-12 text-center">
@@ -323,19 +366,71 @@ export const MyApplicationsSection: React.FC<MyApplicationsSectionProps> = ({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {displayApplications.map((application) => (
-            <ApplicationCard
-              key={application.id}
-              application={application as any}
-              onView={handleView}
-              onDelete={handleDelete}
-            />
-          ))}
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {displayApplications.map((application) => (
+              <ApplicationCard
+                key={application.id}
+                application={application as any}
+                onView={handleView}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
 
-          {/* View All Footer */}
+          {/* Pagination Controls - Only show when showAll is true */}
+          {showAll && totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-6">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+
+              <div className="flex gap-1">
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        currentPage === pageNum
+                          ? "bg-red-600 text-white"
+                          : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+
+          {/* View All Footer - Only show when NOT in showAll mode */}
           {!showAll && applications.length > displayApplications.length && (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center mt-4">
               <p className="text-sm text-gray-600 mb-4">
                 Showing {displayApplications.length} of {applications.length}{" "}
                 applications
@@ -361,7 +456,7 @@ export const MyApplicationsSection: React.FC<MyApplicationsSectionProps> = ({
               </button>
             </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );

@@ -53,7 +53,7 @@ interface FilterOptions {
   maxBudget: string;
 }
 
-const ITEMS_PER_PAGE = 12;
+const ITEMS_PER_PAGE = 9;
 
 export const AvailableJobs: React.FC<AvailableJobsProps> = ({
   jobs,
