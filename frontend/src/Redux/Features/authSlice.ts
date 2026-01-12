@@ -165,6 +165,31 @@ export const approveUser = createAsyncThunk<
   }
 });
 
+export const adminCreateUser = createAsyncThunk<
+  { message: string; user: any },
+  RegisterFormData & { skip_verification?: boolean },
+  { rejectValue: string }
+>("auth/adminCreateUser", async (formData, { rejectWithValue }) => {
+  try {
+    const form = new FormData();
+    Object.entries(formData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && key !== "confirm_password") {
+        form.append(key, value);
+      }
+    });
+
+    const res = await api.post("/adminpanel/users/create/", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res as any;
+  } catch (err: any) {
+    if (err?.fieldErrors && Object.keys(err.fieldErrors).length > 0) {
+      return rejectWithValue(JSON.stringify({ message: "Validation failed", fieldErrors: err.fieldErrors }));
+    }
+    return rejectWithValue(err?.message || "Failed to create user");
+  }
+});
+
 export const loginWithGoogle = createAsyncThunk<
   { accessToken: string; refreshToken: string; userId: string; user: any; userCreated: boolean },
   { accessToken: string },
@@ -378,6 +403,19 @@ const authSlice = createSlice({
         state.loading = false;
       })
       .addCase(approveUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(adminCreateUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.successMessage = null;
+      })
+      .addCase(adminCreateUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.successMessage = action.payload.message || "User created successfully";
+      })
+      .addCase(adminCreateUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

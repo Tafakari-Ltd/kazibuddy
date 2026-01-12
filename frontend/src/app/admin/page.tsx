@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Users, Briefcase, FileText, Building2, BriefcaseIcon, ArrowRight, TrendingUp, PlayCircle, Clock, Pause, Ban, CheckCircle, XCircle, Star } from "lucide-react";
+import { Users, Briefcase, FileText, Building2, BriefcaseIcon, ArrowRight, TrendingUp, PlayCircle, Clock, Pause, Ban, CheckCircle, XCircle, Star, UserPlus } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/Redux/Store/Store";
 import { approveUser } from "@/Redux/Features/authSlice";
@@ -225,6 +225,9 @@ const AdminDashboard: React.FC = () => {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
+              <button onClick={() => router.push("/admin/add-user")} className="inline-flex items-center gap-2 rounded-lg bg-maroon px-4 py-2 text-sm font-medium text-white hover:bg-redish">
+                <UserPlus className="h-4 w-4" /> Add User
+              </button>
               <button onClick={() => router.push("/admin/workers/all")} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
                 <Users className="h-4 w-4" /> View workers
               </button>

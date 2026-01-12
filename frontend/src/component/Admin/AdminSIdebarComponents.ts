@@ -1,4 +1,4 @@
-import { Home, Users, HardHat, Briefcase, Shield, Tags } from "lucide-react";
+import { Home, Users, HardHat, Briefcase, Shield, Tags, UserPlus } from "lucide-react";
 export const menuItems = [
   {
     id: "dashboard",
@@ -67,6 +67,7 @@ export const menuItems = [
       { label: "Admin Users", href: "/admins/users" },
       { label: "Roles & Permissions", href: "/admins/roles" },
       { label: "Access Logs", href: "/admins/logs" },
+      { label: "Add User Manually", href: "/admin/add-user", icon: UserPlus },
     ],
   },
 ];
