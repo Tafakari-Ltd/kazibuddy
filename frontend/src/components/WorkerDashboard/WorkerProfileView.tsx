@@ -1,282 +1,273 @@
 import React from "react";
-import {
-  User, MapPin, Badge, DollarSign, Star, Briefcase, Calendar,
-  Clock, Settings, TrendingUp
+import { 
+  MapPin, 
+  Mail, 
+  Phone, 
+  Calendar, 
+  Star, 
+  ShieldCheck, 
+  Briefcase, 
+  Award, 
+  CheckCircle2,
+  Clock,
+  Edit3,
+  Globe,
+  Download
 } from "lucide-react";
-import { WorkerProfile } from "@/types/worker.types";
+import Image from "next/image";
 
-interface WorkerProfileViewProps {
-  userProfile: WorkerProfile | null;
-  userName?: string;
-  onEditProfile: () => void;
-  onCreateProfile: () => void;
-  onNavigateToJobs: () => void;
+interface Experience {
+  id: string;
+  title: string;
+  company: string;
+  startDate: string;
+  endDate?: string;
+  description?: string;
 }
 
-export const WorkerProfileView: React.FC<WorkerProfileViewProps> = ({
-  userProfile,
-  userName,
-  onEditProfile,
-  onCreateProfile,
-  onNavigateToJobs,
-}) => {
-  if (!userProfile) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="p-12 text-center">
-          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <User className="w-10 h-10 text-gray-400" />
-          </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">No Profile Yet</h3>
-          <p className="text-gray-600 mb-6">
-            Create your worker profile to start applying for jobs and connect with employers.
-          </p>
-          <button 
-            onClick={onCreateProfile}
-            className="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 transition font-medium inline-flex items-center gap-2"
-          >
-            <User className="w-5 h-5" />
-            Create Profile Now
-          </button>
-        </div>
-      </div>
-    );
-  }
+interface Certification {
+  id: string;
+  name: string;
+  issuer: string;
+  date: string;
+}
+
+interface WorkerProfile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  location: string;
+  avatarUrl?: string;
+  bio?: string;
+  title?: string;
+  skills: string[];
+  availability: "Available" | "Busy" | "Offline";
+  rating: number;
+  completedJobs: number;
+  joinedDate: string;
+  experience: Experience[];
+  certifications: Certification[];
+  isVerified: boolean;
+}
+
+interface WorkerProfileViewProps {
+  worker: WorkerProfile;
+  onEdit: () => void;
+}
+
+const WorkerProfileView: React.FC<WorkerProfileViewProps> = ({ worker, onEdit }) => {
+  
+  const getAvailabilityColor = (status: string) => {
+    switch (status) {
+      case "Available": return "bg-emerald-100 text-emerald-700 border-emerald-300";
+      case "Busy": return "bg-amber-100 text-amber-700 border-amber-300";
+      default: return "bg-gray-100 text-gray-700 border-gray-300";
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column */}
-        <div className="space-y-6">
-          
-          {/* Profile Summary Card */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <User className="w-5 h-5 text-red-600" />
-                Profile Summary
-              </h3>
+    <div className="flex flex-col gap-6 w-full">
+      {/* Header Card  */}
+      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div className="flex flex-col md:flex-row gap-4 items-start">
+          {/* Avatar Section */}
+          <div className="flex-shrink-0 relative">
+            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-white shadow-md bg-gradient-to-br from-red-500 via-red-600 to-rose-600 overflow-hidden relative">
+              {worker.avatarUrl ? (
+                <Image 
+                  src={worker.avatarUrl} 
+                  alt="Profile" 
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white font-bold text-lg md:text-xl">
+                  {worker.firstName[0]}{worker.lastName[0]}
+                </div>
+              )}
             </div>
-            <div className="p-6">
-              <div className="flex items-start gap-4 mb-6">
-                <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <User className="w-10 h-10 text-red-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-1 truncate">
-                    {(typeof userProfile?.user !== 'string' ? userProfile?.user?.full_name : undefined) || userName || "Worker"}
-                  </h2>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className={`w-2 h-2 rounded-full ${userProfile.is_available ? "bg-green-500" : "bg-gray-400"}`}></div>
-                    <span className="text-sm text-gray-600">
-                      {userProfile.is_available ? "Available for Work" : "Unavailable"}
-                    </span>
-                  </div>
-                  <button 
-                    onClick={onEditProfile}
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm font-medium flex items-center gap-2"
-                  >
-                    <Settings className="w-4 h-4" />
-                    Edit Profile
-                  </button>
-                </div>
+            {worker.isVerified && (
+              <div className="absolute bottom-0 right-0 bg-blue-600 text-white p-1 rounded-full border-2 border-white shadow-sm" title="Verified Worker">
+                <ShieldCheck size={12} />
               </div>
+            )}
+          </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500 mb-0.5">Location</p>
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {userProfile.location_text || "Not set"}
-                    </p>
+          {/* Info Section */}
+          <div className="flex-grow w-full">
+            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                  {worker.firstName} {worker.lastName}
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getAvailabilityColor(worker.availability)}`}>
+                    {worker.availability}
+                  </span>
+                </h1>
+                <p className="text-gray-600 font-medium text-base mt-1">{worker.title || "Skilled Worker"}</p>
+                
+                <div className="flex flex-wrap gap-4 mt-3 text-sm text-gray-500">
+                  <div className="flex items-center gap-1.5">
+                    <MapPin size={15} />
+                    {worker.location || "Nairobi, Kenya"}
                   </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <Badge className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-xs text-gray-500 mb-0.5">Experience</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {userProfile.years_experience || 0} Years
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <DollarSign className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-xs text-gray-500 mb-0.5">Hourly Rate</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      KES {userProfile.hourly_rate || "Not set"}/hr
-                    </p>
+                  <div className="flex items-center gap-1.5">
+                    <Calendar size={15} />
+                    Joined {worker.joinedDate}
                   </div>
                 </div>
               </div>
 
-              {/* Profile Completion */}
-              <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">Profile Completion</span>
-                  <span className="text-sm font-bold text-gray-900">{userProfile.profile_completion_percentage || 0}%</span>
-                </div>
-                <div className="w-full bg-blue-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all" 
-                    style={{ width: `${userProfile.profile_completion_percentage || 0}%` }}
-                  ></div>
-                </div>
-                {(userProfile.profile_completion_percentage || 0) < 100 && (
-                  <p className="text-blue-700 text-xs mt-2">
-                    💡 Complete your profile to increase visibility!
-                  </p>
-                )}
+              <button 
+                onClick={onEdit}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+              >
+                <Edit3 size={15} />
+                Edit Profile
+              </button>
+            </div>
+
+            {/* Quick Stats in Header */}
+            <div className="flex gap-3 mt-2">
+              <div className="flex items-center gap-1">
+                <Star size={12} fill="currentColor" className="text-amber-500" />
+                <span className="text-xs font-semibold text-gray-700">{worker.rating.toFixed(1)}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <CheckCircle2 size={12} className="text-blue-500" />
+                <span className="text-xs font-semibold text-gray-700">{worker.completedJobs}</span>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Left Column: Contact & Skills */}
+        <div className="space-y-6">
+          {/* Contact Card */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <h3 className="font-bold text-gray-800 mb-4 text-base flex items-center gap-2">
+              Contact Info
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <Mail size={16} className="text-gray-400 mt-1" />
+                <div className="overflow-hidden">
+                  <p className="text-xs text-gray-500 uppercase font-semibold">Email</p>
+                  <p className="text-sm text-gray-800 font-medium truncate" title={worker.email}>{worker.email}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <Phone size={16} className="text-gray-400 mt-1" />
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-semibold">Phone</p>
+                  <p className="text-sm text-gray-800 font-medium">{worker.phone}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <Globe size={16} className="text-gray-400 mt-1" />
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-semibold">Portfolio</p>
+                  <p className="text-sm text-blue-600 font-medium cursor-pointer hover:underline">View Website</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Skills Card */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <h3 className="font-bold text-gray-800 mb-4 text-base">Skills</h3>
+            <div className="flex flex-wrap gap-2">
+              {worker.skills.map((skill, index) => (
+                <span 
+                  key={index}
+                  className="px-3 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-medium"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: About & History (Spans 2 cols) */}
+        <div className="lg:col-span-2 space-y-6">
           
-          {/* Bio Section */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <User className="w-5 h-5 text-red-600" />
-                About Me
+          {/* Bio Card */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <h3 className="font-bold text-gray-800 mb-3 text-base">About Me</h3>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              {worker.bio || "No bio added yet. Click 'Edit Profile' to add a description."}
+            </p>
+          </div>
+
+          {/* Experience Card */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-bold text-gray-800 text-base flex items-center gap-2">
+                <Briefcase size={18} className="text-gray-400" />
+                Experience
               </h3>
             </div>
-            <div className="p-6">
-              {userProfile.bio ? (
-                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                  {userProfile.bio}
-                </p>
+            
+            <div className="space-y-6 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100">
+              {worker.experience.length > 0 ? (
+                worker.experience.map((exp) => (
+                  <div key={exp.id} className="relative pl-8">
+                    <div className="absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 border-white bg-gray-300"></div>
+                    <div className="flex flex-col sm:flex-row sm:justify-between mb-1">
+                      <h4 className="font-bold text-gray-800 text-sm">{exp.title}</h4>
+                      <span className="text-xs font-medium text-gray-500 bg-gray-50 px-2 py-0.5 rounded border border-gray-100 w-fit">
+                        {exp.startDate} - {exp.endDate || "Present"}
+                      </span>
+                    </div>
+                    <p className="text-blue-600 font-medium text-xs mb-1">{exp.company}</p>
+                    <p className="text-gray-600 text-sm">{exp.description}</p>
+                  </div>
+                ))
               ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-400 mb-3">No bio added yet</p>
-                  <button 
-                    onClick={onEditProfile}
-                    className="text-red-600 hover:text-red-700 font-medium text-sm"
-                  >
-                    Add Bio
-                  </button>
-                </div>
+                <div className="pl-8 text-gray-500 italic text-sm">No experience listed.</div>
               )}
             </div>
           </div>
 
-        </div>
-
-        {/* Right Column */}
-        <div className="space-y-6">
-          
-          {/* Quick Stats */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <Star className="w-5 h-5 text-red-600" />
-                Quick Stats
-              </h3>
+          {/* Education Card */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <h3 className="font-bold text-gray-800 mb-5 text-base flex items-center gap-2">
+              <Award size={18} className="text-gray-400" />
+              Certifications
+            </h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {worker.certifications.length > 0 ? (
+                worker.certifications.map((cert) => (
+                  <div key={cert.id} className="p-3 rounded-lg border border-gray-100 bg-gray-50 flex items-start gap-3">
+                    <div className="bg-white p-1.5 rounded shadow-sm text-gray-500">
+                      <Award size={16} />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-800 text-sm">{cert.name}</h4>
+                      <p className="text-xs text-gray-500">{cert.issuer}</p>
+                      <p className="text-xs text-gray-400 mt-1">{cert.date}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-500 italic text-sm">No certifications listed.</div>
+              )}
             </div>
-            <div className="p-6 space-y-4">
-              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Briefcase className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">0</p>
-                    <p className="text-xs text-gray-600">Jobs Completed</p>
-                  </div>
-                </div>
-              </div>
 
-              <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Star className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">0.0</p>
-                    <p className="text-xs text-gray-600">Rating</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Badge className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">{userProfile.years_experience || 0}</p>
-                    <p className="text-xs text-gray-600">Years Experience</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Account Info */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-red-600" />
-                Account Details
-              </h3>
-            </div>
-            <div className="p-6 space-y-3">
-              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                <Calendar className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-500 mb-1">Member Since</p>
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {new Date(userProfile.created_at).toLocaleDateString('en-US', { 
-                      month: 'long', 
-                      year: 'numeric' 
-                    })}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                <Clock className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-500 mb-1">Last Updated</p>
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {new Date(userProfile.updated_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                <Badge className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-500 mb-1">Verification Status</p>
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                    userProfile.verification_status === 'verified' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {userProfile.verification_status === 'verified' ? '✓ Verified' : 'Pending'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Action CTA */}
-          <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl border border-red-100 p-6">
-            <h4 className="font-bold text-red-900 mb-2 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Ready to Work?
-            </h4>
-            <p className="text-sm text-red-800 mb-4">
-              Start browsing available jobs and apply to opportunities that match your skills!
-            </p>
-            <button
-              onClick={onNavigateToJobs}
-              className="w-full bg-red-600 text-white px-4 py-2.5 rounded-lg hover:bg-red-700 transition font-medium text-sm"
-            >
-              Browse Available Jobs
-            </button>
+             {worker.certifications.length > 0 && (
+               <button className="mt-5 w-full py-2 flex items-center justify-center gap-2 text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition-colors border border-dashed border-gray-200">
+                 <Download size={15} />
+                 Download CV / Documents
+               </button>
+            )}
           </div>
 
         </div>
@@ -284,3 +275,5 @@ export const WorkerProfileView: React.FC<WorkerProfileViewProps> = ({
     </div>
   );
 };
+
+export default WorkerProfileView;
