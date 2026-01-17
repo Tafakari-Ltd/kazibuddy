@@ -1,6 +1,7 @@
 "use client";
 import { Provider } from "react-redux";
 import React, { useEffect } from "react";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import { store } from "@/Redux/Store/Store";
 import { loadSession } from "@/Redux/Features/authSlice";
 import { fetchUserWorkerProfile } from "@/Redux/Features/workerProfilesSlice";
@@ -23,12 +24,16 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
   return (
     <Provider store={store}>
-      <AuthInitializer>
-        <Toaster position="top-right" richColors />
-        {children}
-      </AuthInitializer>
+      <GoogleOAuthProvider clientId={googleClientId || ""}>
+        <AuthInitializer>
+          <Toaster position="top-right" richColors />
+          {children}
+        </AuthInitializer>
+      </GoogleOAuthProvider>
     </Provider>
   );
 }
