@@ -22,6 +22,7 @@ interface PendingUser {
   created_at: string;
   email_verified?: boolean;
   is_verified?: boolean;
+  is_oauth_user?: boolean;
 }
 
 const getPendingUserId = (user: PendingUser): string | undefined => {
@@ -53,7 +54,7 @@ const ApproveUsersPage: React.FC = () => {
       if (err.status === 404) errorMessage = "Endpoint not found.";
       else if (err.status === 401) errorMessage = "Authentication expired.";
       else if (err.status === 403) errorMessage = "Forbidden - admin access required.";
-      
+
       toast.error(errorMessage);
       setError(errorMessage);
     } finally {
@@ -110,11 +111,11 @@ const ApproveUsersPage: React.FC = () => {
           ) : pendingUsers.length === 0 ? (
             <div className="p-8 bg-white rounded-lg border border-gray-200 text-center text-gray-600">No pending users to approve</div>
           ) : (
-            <PendingUsersTable 
-              users={pendingUsers} 
-              loading={loading} 
-              approvingId={approvingId} 
-              onApprove={handleApproveUser} 
+            <PendingUsersTable
+              users={pendingUsers}
+              loading={loading}
+              approvingId={approvingId}
+              onApprove={handleApproveUser}
             />
           )}
         </div>

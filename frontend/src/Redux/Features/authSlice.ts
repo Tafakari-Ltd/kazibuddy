@@ -2,12 +2,12 @@
 "use client";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "@/lib/axios";
-import axios from "axios"; 
-import type { 
-  ILoginResponse, 
-  RegisterFormData, 
-  VerifyEmailData, 
-  ApproveUserData 
+import axios from "axios";
+import type {
+  ILoginResponse,
+  RegisterFormData,
+  VerifyEmailData,
+  ApproveUserData
 } from "@/types";
 
 interface AuthState {
@@ -125,18 +125,18 @@ export const login = createAsyncThunk<
     return { accessToken, refreshToken, userId, user };
   } catch (err: any) {
     let errorMessage = err?.message || "Login failed";
-    
+
     if (err?.status === 401 || err?.response?.status === 401) {
       errorMessage = "Invalid email or password";
     }
-    
+
     if (err?.fieldErrors && Object.keys(err.fieldErrors).length > 0) {
       const errors = Object.values(err.fieldErrors).flat();
       if (errors.length > 0) {
         errorMessage = errors.join(". ");
       }
     }
-    
+
     if (err?.response?.data?.detail) {
       errorMessage = err.response.data.detail;
     }
@@ -191,72 +191,103 @@ export const adminCreateUser = createAsyncThunk<
 });
 
 export const loginWithGoogle = createAsyncThunk<
-  { accessToken: string; refreshToken: string; userId: string; user: any; userCreated: boolean },
+  { accessToken: string; refreshToken: string; userId: string; user: any; userCreated: boolean; pendingApproval?: boolean },
   { accessToken: string },
   { rejectValue: string }
 >("auth/loginWithGoogle", async ({ accessToken: googleToken }, { rejectWithValue }) => {
   try {
     const res = await api.post("/v1/auth/google/", {
-      access_token: googleToken, 
+      access_token: googleToken,
     });
 
     const data = res as any;
-    
+
+    // Check if user was just created and is pending approval (201 status)
+    if (data.user_created && data.pending_approval) {
+      return rejectWithValue(
+        "Account created successfully! Your account is pending admin approval. You will be notified via email once approved."
+      );
+    }
+
     let accessToken, refreshToken;
     let userId = data.user_id;
-    
+
     let user = {
-        ...data.user_info,
-        full_name: data.user_info?.name || data.user?.name || "",
-        ...data.user
+      ...data.user_info,
+      full_name: data.user_info?.name || data.user?.name || "",
+      ...data.user
     };
     let userCreated = data.user_created || false;
 
     if (data.tokens) {
-        accessToken = data.tokens.access;
-        refreshToken = data.tokens.refresh;
+      accessToken = data.tokens.access;
+      refreshToken = data.tokens.refresh;
     } else if (data.access) {
-        accessToken = data.access;
-        refreshToken = data.refresh;
+      accessToken = data.access;
+      refreshToken = data.refresh;
     } else if (data.key) {
-        accessToken = data.key;
+      accessToken = data.key;
     }
 
     if (!accessToken) return rejectWithValue("Invalid response from server");
 
-    // Persist tokens immediately
-    setAuthCookie(accessToken);
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem("accessToken", accessToken);
-      if (refreshToken) sessionStorage.setItem("refreshToken", refreshToken);
-    }
-    
-    // FETCH PROFILE
+    // DON'T persist tokens yet - wait until we verify the user is approved
+
+    // FETCH PROFILE to verify user is approved
     try {
       const baseURL = process.env.NEXT_PUBLIC_BASE_URL || "";
       const meResponse = await axios.get(`${baseURL}/accounts/me/`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      
+
       const userFromApi = meResponse.data;
       user = { ...user, ...userFromApi };
       userId = user.id || user.pk || userId;
-    } catch (error: any) {
-      console.warn("Profile fetch failed (likely unverified/new user). Proceeding with Google info.", error);
-     
-    }
 
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem("user", JSON.stringify(user));
+      // SUCCESS - User is approved, now persist tokens
+      setAuthCookie(accessToken);
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("accessToken", accessToken);
+        if (refreshToken) sessionStorage.setItem("refreshToken", refreshToken);
+        sessionStorage.setItem("user", JSON.stringify(user));
+      }
+
+    } catch (error: any) {
+      // Profile fetch failed - likely unapproved user
+      console.warn("Profile fetch failed - user may not be approved", error);
+
+      // Check if it's a 403 or 401 (unapproved/unauthorized)
+      if (error?.response?.status === 403 || error?.status === 403 ||
+        error?.response?.status === 401 || error?.status === 401) {
+        return rejectWithValue(
+          "Your account is pending admin approval. Please wait for approval before logging in."
+        );
+      }
+
+      // Other errors - reject without storing tokens
+      return rejectWithValue(
+        error?.response?.data?.message || error?.message || "Failed to verify account"
+      );
     }
 
     return { accessToken, refreshToken, userId, user, userCreated };
   } catch (err: any) {
+    // Make sure no tokens are stored on error
     if (typeof window !== "undefined") {
       sessionStorage.removeItem("accessToken");
       sessionStorage.removeItem("refreshToken");
+      sessionStorage.removeItem("user");
       removeAuthCookie();
     }
+
+    // Handle 403 - Account pending approval
+    if (err?.status === 403 || err?.response?.status === 403) {
+      const message = err?.message || err?.response?.data?.message ||
+        "Your account is pending admin approval. Please wait for approval before logging in.";
+      return rejectWithValue(message);
+    }
+
+    // Handle other errors
     return rejectWithValue(err.message || "Google login failed");
   }
 });
@@ -310,7 +341,7 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-     
+
       .addCase(login.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -347,7 +378,7 @@ const authSlice = createSlice({
 
         sessionStorage.setItem("accessToken", action.payload.accessToken);
         if (action.payload.refreshToken) {
-            sessionStorage.setItem("refreshToken", action.payload.refreshToken);
+          sessionStorage.setItem("refreshToken", action.payload.refreshToken);
         }
         sessionStorage.setItem("userId", action.payload.userId);
         sessionStorage.setItem("user", JSON.stringify(action.payload.user));

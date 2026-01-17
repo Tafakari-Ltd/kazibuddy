@@ -1,18 +1,17 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FcGoogle } from "react-icons/fc";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
-import { login, loginWithGoogle } from "@/Redux/Features/authSlice";
-import { fetchUserWorkerProfile } from "@/Redux/Features/workerProfilesSlice"; 
-import { isApprovalNeededError } from "@/lib/approvalUtils";
+import { login } from "@/Redux/Features/authSlice";
+import { fetchUserWorkerProfile } from "@/Redux/Features/workerProfilesSlice";
+import { AppDispatch, RootState } from "@/Redux/Store/Store";
 import { toast } from "sonner";
 import { AuthLayout } from "@/component/Authentication/AuthLayout";
-import { useGoogleLogin } from "@react-oauth/google";
-import { AppDispatch, RootState } from "@/Redux/Store/Store";
+import { initiateGoogleLogin } from "@/lib/googleOAuth";
 
 const LoginPage: React.FC = () => {
   const router = useRouter();
@@ -22,11 +21,24 @@ const LoginPage: React.FC = () => {
   const { loading, error } = useSelector((state: RootState) => state.auth);
   const [formError, setFormError] = useState<string>("");
 
+  // Check for messages from backend OAuth redirect
+  useEffect(() => {
+    const status = searchParams.get("status");
+    const message = searchParams.get("message");
+
+    if (status === "pending_approval" && message) {
+      toast.success(decodeURIComponent(message), { duration: 6000 });
+      setFormError(decodeURIComponent(message));
+      // Clean up URL
+      router.replace("/auth/login");
+    }
+  }, [searchParams, router]);
+
   const handleSuccessfulLogin = async (user: any) => {
     const pendingJobApplication = sessionStorage.getItem('pendingJobApplication');
     const redirectAfterLogin = sessionStorage.getItem('redirectAfterLogin');
     const returnTo = searchParams.get("returnTo");
-    
+
     const isAdmin =
       user?.is_staff ||
       user?.is_superuser ||
@@ -57,7 +69,7 @@ const LoginPage: React.FC = () => {
         router.push('/worker?setup=1');
         toast.info('Please create a worker profile before applying for jobs');
       }
-    } 
+    }
     else if (returnTo) {
       router.push(returnTo);
     } else if (redirectAfterLogin) {
@@ -72,28 +84,10 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  const googleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        const result = await dispatch(
-          loginWithGoogle({ accessToken: tokenResponse.access_token })
-        ).unwrap();
-
-        if (result.userCreated) {
-           toast.success("Account created! Please complete your profile.");
-           router.push('/worker?setup=1'); 
-        } else {
-           toast.success("Logged in successfully via Google!");
-           handleSuccessfulLogin(result.user);
-        }
-      } catch (err: any) {
-        toast.error(err || "Google login failed");
-      }
-    },
-    onError: () => {
-      toast.error("Google login failed to start");
-    },
-  });
+  // Simple redirect to Google OAuth (authorization code flow)
+  const handleGoogleLogin = () => {
+    initiateGoogleLogin();
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -109,18 +103,19 @@ const LoginPage: React.FC = () => {
 
     } catch (err: any) {
       console.log('Login error:', err);
-      
+
       let errorMessage = "Login failed";
-     
+
       if (typeof err === 'string') {
         errorMessage = err;
       } else if (err?.message) {
         errorMessage = err.message;
       }
-     
+
       const errorLower = errorMessage.toLowerCase();
-      
-      if (isApprovalNeededError(errorMessage)) {
+
+      if (errorLower.includes('pending') || errorLower.includes('approval') ||
+        errorLower.includes('not verified')) {
         toast.info(
           "Your account is pending admin approval. Please wait for approval notification via email.",
           { duration: 5000 }
@@ -128,13 +123,13 @@ const LoginPage: React.FC = () => {
         setFormError(
           "Your account is pending admin approval. You will be able to login once approved."
         );
-      } 
-      else if (errorLower.includes('verify') || 
-               errorLower.includes('verification') ||
-               errorLower.includes('not verified')) {
+      }
+      else if (errorLower.includes('verify') ||
+        errorLower.includes('verification') ||
+        errorLower.includes('not verified')) {
         setFormError("Please verify your email address before logging in.");
         toast.warning("Email verification required");
-        
+
         if (email) {
           setTimeout(() => {
             router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
@@ -159,10 +154,11 @@ const LoginPage: React.FC = () => {
       else {
         setFormError(errorMessage);
       }
-      
-      if (!isApprovalNeededError(errorMessage)) {
+
+      if (!(errorLower.includes('pending') || errorLower.includes('approval') ||
+        errorLower.includes('not verified'))) {
         if (!formError) {
-           toast.error(errorMessage);
+          toast.error(errorMessage);
         }
       }
     }
@@ -262,8 +258,7 @@ const LoginPage: React.FC = () => {
 
         <button
           className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-300 text-gray-700 font-medium py-2.5 px-4 rounded-lg hover:bg-gray-50 transition mb-4"
-          onClick={() => googleLogin()}
-          disabled={loading}
+          onClick={handleGoogleLogin}
           type="button"
         >
           <FcGoogle size={24} />
@@ -337,18 +332,17 @@ const LoginPage: React.FC = () => {
 
           {(formError || error) && (
             <div
-              className={`p-4 rounded-lg border ${
-                (formError || error)
-                  ?.toLowerCase()
-                  .includes("pending") ||
+              className={`p-4 rounded-lg border ${(formError || error)
+                ?.toLowerCase()
+                .includes("pending") ||
                 (formError || error)?.toLowerCase().includes("approval")
-                  ? "bg-yellow-50 border-yellow-300"
-                  : (formError || error)
-                      ?.toLowerCase()
-                      .includes("verify")
+                ? "bg-yellow-50 border-yellow-300"
+                : (formError || error)
+                  ?.toLowerCase()
+                  .includes("verify")
                   ? "bg-blue-50 border-blue-300"
                   : "bg-red-50 border-red-300"
-              }`}
+                }`}
             >
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-0.5">
@@ -372,8 +366,8 @@ const LoginPage: React.FC = () => {
                       />
                     </svg>
                   ) : (formError || error)
-                      ?.toLowerCase()
-                      .includes("verify") ? (
+                    ?.toLowerCase()
+                    .includes("verify") ? (
                     <svg
                       className="w-5 h-5 text-blue-600"
                       fill="none"
@@ -405,49 +399,47 @@ const LoginPage: React.FC = () => {
                 </div>
                 <div className="flex-1">
                   <h3
-                    className={`text-sm font-semibold mb-1 ${
-                      (formError || error)
-                        ?.toLowerCase()
-                        .includes("pending") ||
+                    className={`text-sm font-semibold mb-1 ${(formError || error)
+                      ?.toLowerCase()
+                      .includes("pending") ||
                       (formError || error)
                         ?.toLowerCase()
                         .includes("approval")
-                        ? "text-yellow-800"
-                        : (formError || error)
-                            ?.toLowerCase()
-                            .includes("verify")
+                      ? "text-yellow-800"
+                      : (formError || error)
+                        ?.toLowerCase()
+                        .includes("verify")
                         ? "text-blue-800"
                         : "text-red-800"
-                    }`}
+                      }`}
                   >
                     {(formError || error)
                       ?.toLowerCase()
                       .includes("pending") ||
-                    (formError || error)
-                      ?.toLowerCase()
-                      .includes("approval")
-                      ? "Account Pending Approval"
-                      : (formError || error)
-                          ?.toLowerCase()
-                          .includes("verify")
-                      ? "Email Verification Required"
-                      : "Login Failed"}
-                  </h3>
-                  <p
-                    className={`text-sm ${
-                      (formError || error)
-                        ?.toLowerCase()
-                        .includes("pending") ||
                       (formError || error)
                         ?.toLowerCase()
                         .includes("approval")
-                        ? "text-yellow-700"
-                        : (formError || error)
-                            ?.toLowerCase()
-                            .includes("verify")
+                      ? "Account Pending Approval"
+                      : (formError || error)
+                        ?.toLowerCase()
+                        .includes("verify")
+                        ? "Email Verification Required"
+                        : "Login Failed"}
+                  </h3>
+                  <p
+                    className={`text-sm ${(formError || error)
+                      ?.toLowerCase()
+                      .includes("pending") ||
+                      (formError || error)
+                        ?.toLowerCase()
+                        .includes("approval")
+                      ? "text-yellow-700"
+                      : (formError || error)
+                        ?.toLowerCase()
+                        .includes("verify")
                         ? "text-blue-700"
                         : "text-red-700"
-                    }`}
+                      }`}
                   >
                     {formError || error}
                   </p>
@@ -457,19 +449,19 @@ const LoginPage: React.FC = () => {
                     (formError || error)
                       ?.toLowerCase()
                       .includes("approval")) && (
-                    <p className="text-xs text-yellow-600 mt-2">
-                      💡 You will receive an email notification once your
-                      account has been approved by an administrator.
-                    </p>
-                  )}
+                      <p className="text-xs text-yellow-600 mt-2">
+                        💡 You will receive an email notification once your
+                        account has been approved by an administrator.
+                      </p>
+                    )}
                   {(formError || error)
                     ?.toLowerCase()
                     .includes("verify") && (
-                    <p className="text-xs text-blue-600 mt-2">
-                      💡 Check your email inbox (and spam folder) for the
-                      verification link.
-                    </p>
-                  )}
+                      <p className="text-xs text-blue-600 mt-2">
+                        💡 Check your email inbox (and spam folder) for the
+                        verification link.
+                      </p>
+                    )}
                 </div>
               </div>
             </div>

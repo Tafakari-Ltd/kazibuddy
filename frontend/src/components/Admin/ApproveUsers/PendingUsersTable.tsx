@@ -15,6 +15,7 @@ interface PendingUser {
   created_at: string;
   email_verified?: boolean;
   is_verified?: boolean;
+  is_oauth_user?: boolean;
 }
 
 interface PendingUsersTableProps {
@@ -47,7 +48,9 @@ const PendingUsersTable: React.FC<PendingUsersTableProps> = ({ users, onApprove,
             {users.map((user, idx) => {
               const userId = getPendingUserId(user);
               const rowId = userId ?? `${user.email}-${idx}`;
-              const isEmailVerified = user.email_verified || user.is_verified;
+              // OAuth users (no phone number) are automatically email verified
+              const isOAuthUser = user.is_oauth_user || !user.phone_number || user.phone_number === 'null';
+              const isEmailVerified = user.email_verified || user.is_verified || isOAuthUser;
 
               return (
                 <tr key={rowId} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
@@ -81,9 +84,8 @@ const PendingUsersTable: React.FC<PendingUsersTableProps> = ({ users, onApprove,
                       onClick={() => onApprove(user)}
                       disabled={loading || approvingId === userId || !isEmailVerified}
                       title={!isEmailVerified ? "User must verify email first" : "Approve User"}
-                      className={`inline-flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-md transition ${
-                        !isEmailVerified ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
-                      }`}
+                      className={`inline-flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-md transition ${!isEmailVerified ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
+                        }`}
                     >
                       {approvingId === userId ? "⏳ Approving..." : "Approve"}
                     </button>
