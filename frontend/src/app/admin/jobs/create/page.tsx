@@ -1,8 +1,10 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Info, Users, Briefcase, Plus } from "lucide-react";
 import Link from "next/link";
+
+export const dynamic = "force-dynamic";
 
 const AdminCreateJobPage = () => {
   const router = useRouter();

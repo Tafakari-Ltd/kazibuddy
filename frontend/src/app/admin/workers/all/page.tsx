@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import ProtectedRoute from "@/component/Authentication/ProtectedRoute";
 import { AppDispatch, RootState } from "@/Redux/Store/Store";
@@ -15,7 +15,7 @@ import ApplicationViewModal from "@/components/Admin/Workers/ApplicationViewModa
 import ApplicationStatusBadge from "@/components/Admin/Workers/ApplicationStatusBadge";
 import { User, Briefcase, Calendar, DollarSign } from "lucide-react";
 
-const AllWorkersAdministration: React.FC = () => {
+const AllWorkersContent: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { profiles, loading, error, pagination } = useSelector((state: RootState) => state.workerProfiles);
 
@@ -233,4 +233,12 @@ const AllWorkersAdministration: React.FC = () => {
   );
 };
 
-export default AllWorkersAdministration;
+const AllWorkersPage = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AllWorkersContent />
+    </Suspense>
+  );
+};
+
+export default AllWorkersPage;

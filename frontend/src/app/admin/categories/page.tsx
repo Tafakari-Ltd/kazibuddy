@@ -1,10 +1,12 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useCategories } from "@/Redux/Functions/useCategories";
 import { Plus, Edit2, Trash2, Eye, AlertCircle, Save, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const CategoriesPage = () => {
+export const dynamic = "force-dynamic";
+
+const CategoriesContent = () => {
   const {
     categories,
     loading,
@@ -679,5 +681,11 @@ const CategoriesPage = () => {
     </div>
   );
 };
+
+const CategoriesPage = () => (
+  <Suspense fallback={<div>Loading...</div>}>
+    <CategoriesContent />
+  </Suspense>
+);
 
 export default CategoriesPage;

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
+import React, { Suspense } from "react";
 
 import { Providers } from "./providers/Providers";
 import MainLayoutWrapper from "@/customLayouts/MainLayoutWrapper/MainLayoutWrapper";
@@ -28,13 +29,15 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${outfit.variable} antialiased`}>
         <Providers>
-          <ProtectedRoute>
-            <MainLayoutWrapper>
-              {children}
-              <ApplyJob />
-              <JobMoreDescription />
-            </MainLayoutWrapper>
-          </ProtectedRoute>
+          <Suspense fallback={<div>Loading app...</div>}>
+            <ProtectedRoute>
+              <MainLayoutWrapper>
+                {children}
+                <ApplyJob />
+                <JobMoreDescription />
+              </MainLayoutWrapper>
+            </ProtectedRoute>
+          </Suspense>
         </Providers>
       </body>
     </html>

@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/Redux/Store/Store";
 import { toast } from "sonner";
 import api from "@/lib/axios";
 
-export default function GoogleSuccessPage() {
+export const dynamic = "force-dynamic";
+
+function GoogleSuccessContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const dispatch = useDispatch<AppDispatch>();
@@ -74,5 +76,13 @@ export default function GoogleSuccessPage() {
                 <p className="text-gray-700 text-lg">Completing sign in...</p>
             </div>
         </div>
+    );
+}
+
+export default function GoogleSuccessPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <GoogleSuccessContent />
+        </Suspense>
     );
 }

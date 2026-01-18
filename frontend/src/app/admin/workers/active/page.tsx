@@ -1,10 +1,18 @@
 "use client";
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import { Eye, Edit, Trash2, Search } from "lucide-react";
 
 import { workersDummy } from "@/component/Homepage/HotJobs/Workers";
 
-const AllWorkersAdministration = () => {
+const ActiveWorkersPage = () => {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <ActiveWorkersContent />
+    </Suspense>
+  );
+};
+
+const ActiveWorkersContent = () => {
   const [workers, setWorkers] = useState(workersDummy);
 
   const [search, setSearch] = useState("");
@@ -86,4 +94,4 @@ const AllWorkersAdministration = () => {
   );
 };
 
-export default AllWorkersAdministration;
+export default ActiveWorkersPage;

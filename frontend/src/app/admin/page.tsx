@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Users, Briefcase, FileText, Building2, BriefcaseIcon, ArrowRight, TrendingUp, PlayCircle, Clock, Pause, Ban, CheckCircle, XCircle, Star, UserPlus } from "lucide-react";
 import { useDispatch } from "react-redux";
@@ -39,7 +39,7 @@ const getPendingUserId = (user: PendingUser): string | undefined => {
   return user.id || user.user_id || user.uuid;
 };
 
-const AdminDashboard: React.FC = () => {
+const AdminDashboardContent: React.FC = () => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
 
@@ -328,6 +328,14 @@ const AdminDashboard: React.FC = () => {
         />
       </div>
     </ProtectedRoute>
+  );
+};
+
+const AdminDashboard: React.FC = () => {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}>
+      <AdminDashboardContent />
+    </Suspense>
   );
 };
 

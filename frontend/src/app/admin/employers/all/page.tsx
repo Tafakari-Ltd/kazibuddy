@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, Suspense } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import ProtectedRoute from "@/component/Authentication/ProtectedRoute";
 import { AppDispatch, RootState } from "@/Redux/Store/Store";
@@ -13,7 +13,9 @@ import EmployerFilters from "@/components/Admin/Employers/EmployerFilters";
 import EmployerListRow from "@/components/Admin/Employers/EmployerListRow";
 import JobPreviewModal from "@/components/Admin/Employers/JobPreviewModal";
 
-const AllEmployersAdministration: React.FC = () => {
+export const dynamic = "force-dynamic";
+
+const AllEmployersContent: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { profiles, loading, error, pagination } = useSelector(
     (state: RootState) => state.employerProfiles,
@@ -280,5 +282,11 @@ const AllEmployersAdministration: React.FC = () => {
     </ProtectedRoute>
   );
 };
+
+const AllEmployersAdministration: React.FC = () => (
+  <Suspense fallback={<div>Loading...</div>}>
+    <AllEmployersContent />
+  </Suspense>
+);
 
 export default AllEmployersAdministration;

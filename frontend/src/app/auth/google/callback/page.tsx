@@ -7,6 +7,8 @@ import { AppDispatch } from "@/Redux/Store/Store";
 import api from "@/lib/axios";
 import { toast } from "sonner";
 
+export const dynamic = "force-dynamic";
+
 export default function GoogleCallbackPage() {
     const router = useRouter();
     const searchParams = useSearchParams();

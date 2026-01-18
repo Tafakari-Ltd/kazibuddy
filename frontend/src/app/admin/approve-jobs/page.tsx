@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import ProtectedRoute from "@/component/Authentication/ProtectedRoute";
 import api from "@/lib/axios";
 import { toast } from "sonner";
@@ -39,7 +39,7 @@ interface PendingJob {
   };
 }
 
-const ApproveJobsPage: React.FC = () => {
+const ApproveJobsContent: React.FC = () => {
   const [pendingJobs, setPendingJobs] = useState<PendingJob[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -186,4 +186,11 @@ const ApproveJobsPage: React.FC = () => {
   );
 };
 
+const ApproveJobsPage: React.FC = () => {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}>
+      <ApproveJobsContent />
+    </Suspense>
+  );
+};
 export default ApproveJobsPage;

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -12,6 +11,8 @@ import { AppDispatch, RootState } from "@/Redux/Store/Store";
 import { toast } from "sonner";
 import { AuthLayout } from "@/component/Authentication/AuthLayout";
 import { initiateGoogleLogin } from "@/lib/googleOAuth";
+
+export const dynamic = "force-dynamic";
 
 const LoginPage: React.FC = () => {
   const router = useRouter();

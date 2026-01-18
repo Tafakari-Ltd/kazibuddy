@@ -1,11 +1,14 @@
 "use client";
 
-import React, { useState, FormEvent } from "react";
+import React, { useState, FormEvent, Suspense } from "react";
+
+export const dynamic = "force-dynamic";
+
 import { AuthLayout } from "@/component/Authentication/AuthLayout";
 import Link from "next/link";
 import { ShieldCheck, Mail, ArrowRight } from "lucide-react";
 
-const Forgot: React.FC = () => {
+const ForgotContent: React.FC = () => {
   const [email, setEmail] = useState<string>("");
   const [submitted, setSubmitted] = useState<boolean>(false);
 
@@ -122,6 +125,14 @@ const Forgot: React.FC = () => {
         </div>
       </div>
     </AuthLayout>
+  );
+};
+
+const Forgot: React.FC = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ForgotContent />
+    </Suspense>
   );
 };
 

@@ -1,11 +1,19 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useCategories } from "@/Redux/Functions/useCategories";
 import { ArrowLeft, Save, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
 const CreateCategoryPage = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CreateCategoryForm />
+    </Suspense>
+  );
+};
+
+const CreateCategoryForm = () => {
   const router = useRouter();
   const {
     loading,

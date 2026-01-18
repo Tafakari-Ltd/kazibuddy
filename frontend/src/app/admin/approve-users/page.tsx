@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/Redux/Store/Store";
 import { approveUser } from "@/Redux/Features/authSlice";
@@ -29,7 +29,7 @@ const getPendingUserId = (user: PendingUser): string | undefined => {
   return user.id || user.user_id || user.uuid;
 };
 
-const ApproveUsersPage: React.FC = () => {
+const ApproveUsersContent: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { loading } = useSelector((state: RootState) => state.auth);
 
@@ -121,6 +121,14 @@ const ApproveUsersPage: React.FC = () => {
         </div>
       </div>
     </ProtectedRoute>
+  );
+};
+
+const ApproveUsersPage: React.FC = () => {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center py-12 text-lg text-gray-600">Loading...</div>}>
+      <ApproveUsersContent />
+    </Suspense>
   );
 };
 

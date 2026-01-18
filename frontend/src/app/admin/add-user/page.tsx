@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/Redux/Store/Store";
 import { adminCreateUser, clearAuthState } from "@/Redux/Features/authSlice";
@@ -22,7 +22,7 @@ interface IFormData {
   skip_verification: boolean;
 }
 
-const AddUserPage: React.FC = () => {
+const AddUserContent: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const { loading } = useSelector((state: RootState) => state.auth);
@@ -484,4 +484,11 @@ const AddUserPage: React.FC = () => {
   );
 };
 
+const AddUserPage: React.FC = () => {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}>
+      <AddUserContent />
+    </Suspense>
+  );
+};
 export default AddUserPage;

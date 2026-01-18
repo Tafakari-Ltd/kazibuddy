@@ -128,7 +128,7 @@ export interface JobDetails {
   max_applicants: number;
   status: JobStatus;
   visibility: JobVisibility;
-  employer: string; // Employer ID
+  employer: string | EmployerDetails; // Employer ID or object
   category: string; // Category ID
 }
 

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, Suspense } from "react";
 import { useSelector } from "react-redux";
 import { useSearchParams } from "next/navigation";
 import { useJobs } from "@/Redux/Functions/useJobs";
@@ -15,6 +15,8 @@ import JobFilters from "@/components/Admin/Jobs/JobFilters";
 import JobCard from "@/components/Admin/Jobs/JobCard";
 import JobViewModal from "@/components/Admin/Jobs/JobViewModal";
 import DeleteJobModal from "@/components/Admin/Jobs/DeleteJobModal";
+
+export const dynamic = "force-dynamic";
 
 const JobsManagementPage = () => {
   const searchParams = useSearchParams();
@@ -239,7 +241,7 @@ const JobsManagementPage = () => {
               <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>
               <p className="text-gray-600 mb-4">Try adjusting your filters or create a new job.</p>
               <button onClick={() => setShowCreateModal(true)} className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
-                <Plus className="w-4 h-4" /> Create First Job
+                <Plus className="w-4 h-4" /> Post New Job
               </button>
             </div>
           ) : (

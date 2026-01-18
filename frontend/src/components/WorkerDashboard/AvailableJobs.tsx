@@ -116,8 +116,8 @@ export const AvailableJobs: React.FC<AvailableJobsProps> = ({
       const matchesUrgency = !filters.urgency || job.urgency_level === filters.urgency;
 
       const matchesBudget =
-        (!filters.minBudget || parseFloat(job.budget_min) >= parseFloat(filters.minBudget)) &&
-        (!filters.maxBudget || parseFloat(job.budget_max) <= parseFloat(filters.maxBudget));
+        (!filters.minBudget || job.budget_min >= parseFloat(filters.minBudget)) &&
+        (!filters.maxBudget || job.budget_max <= parseFloat(filters.maxBudget));
 
       return (
         matchesSearch &&
