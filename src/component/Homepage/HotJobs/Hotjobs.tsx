@@ -355,24 +355,17 @@ const HotJobs = () => {
               onMouseEnter={() => setHoveredJob(job.id)}
               onMouseLeave={() => setHoveredJob(null)}
             >
-              <div className="relative h-48 overflow-hidden">
-                <img
-                  src={(job as any).job_image || "https://images.pexels.com/photos/4239016/pexels-photo-4239016.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"}
-                  alt={job.title}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div className={`absolute inset-0 bg-gradient-to-br from-[#800000]/60 to-gray-900/60 mix-blend-multiply transition-opacity duration-300 ${hoveredJob === job.id ? "opacity-60" : "opacity-80"}`} />
-                <button onClick={(e) => toggleFavorite(job.id, e)} aria-label="Toggle favorite" className="absolute top-3 right-3 p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30">
-                  <Heart className={`w-5 h-5 ${favorites.has(job.id) ? "fill-red-500 text-red-500" : "text-white hover:text-red-300"}`} />
-                </button>
-                <div className="absolute top-3 left-3">
+              <div className="p-6 relative">
+                <div className="absolute top-3 right-3">
+                  <button onClick={(e) => toggleFavorite(job.id, e)} aria-label="Toggle favorite" className="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
+                    <Heart className={`w-5 h-5 ${favorites.has(job.id) ? "fill-red-500 text-red-500" : "text-gray-600 hover:text-red-500"}`} />
+                  </button>
+                </div>
+                <div className="mb-4">
                   <span className="bg-[#800000] text-white px-3 py-1 rounded-sm text-xs font-semibold shadow-lg">
                     {formatJobType(job.job_type)}
                   </span>
                 </div>
-              </div>
-
-              <div className="p-6">
                 <h4 className="text-xl font-bold text-[#800000] mb-3 line-clamp-2 group-hover:text-[#600000] transition-colors">{job.title}</h4>
                 <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">{job.description}</p>
                 <div className="space-y-3 mb-6">
@@ -388,7 +381,7 @@ const HotJobs = () => {
                     <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">{typeof job.category === "string" ? job.category : (job.category as any)?.name || "General"}</span>
                   </div>
                 </div>
-                <div className="space-y-3">
+                <div className="flex items-center gap-3">
                   <button onClick={() => handleViewDetails(job)} className="w-full flex items-center justify-center gap-2 text-[#800000] hover:text-white hover:bg-gradient-to-r hover:from-[#800000] hover:to-[#600000] border-2 border-[#800000] px-4 py-2 rounded-sm text-sm font-bold transition-all duration-200 group/btn">
                     View Details <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
                   </button>

@@ -241,24 +241,24 @@ const Featured = () => {
                 </div>
               </div>
             )}
-            <div className="relative h-48 overflow-hidden">
-              <img
-                src={(job as any).job_image || "https://images.pexels.com/photos/4239016/pexels-photo-4239016.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"}
-                alt={job.title}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-              />
-              <div className={`absolute inset-0 bg-gradient-to-br from-[#800000]/60 to-gray-900/60 mix-blend-multiply transition-opacity duration-300 ${hoveredJob === job.id ? 'opacity-50' : 'opacity-70'}`} />
-              <button onClick={(e) => toggleFavorite(job.id, e)} className="absolute top-3 right-3 p-2 bg-white/20 backdrop-blur-sm rounded-sm transition-all duration-200 hover:bg-white/30 z-10">
-                <Heart className={`w-5 h-5 ${favorites.has(job.id) ? 'fill-red-500 text-red-500' : 'text-white hover:text-red-300'}`} />
-              </button>
-              <div className="absolute bottom-3 left-3">
+            <div className="p-6 relative">
+              {!isFiltering && (
+                <div className="absolute top-3 left-3 z-10">
+                  <div className="flex items-center gap-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white px-3 py-1 rounded-sm text-xs font-bold shadow-lg">
+                    <Star className="w-3 h-3" /> FEATURED
+                  </div>
+                </div>
+              )}
+              <div className="absolute top-3 right-3">
+                <button onClick={(e) => toggleFavorite(job.id, e)} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 z-10">
+                  <Heart className={`w-5 h-5 ${favorites.has(job.id) ? 'fill-red-500 text-red-500' : 'text-gray-600 hover:text-red-500'}`} />
+                </button>
+              </div>
+              <div className="mb-4 mt-8">
                 <span className="bg-[#800000] text-white px-3 py-1 rounded-sm text-xs font-semibold shadow-lg">
                   {job.job_type.replace('_', ' ')}
                 </span>
               </div>
-            </div>
-
-            <div className="p-6">
               <h4 className="text-xl font-bold text-[#800000] mb-3 line-clamp-2 group-hover:text-[#600000]">
                 {job.title}
               </h4>
@@ -284,7 +284,7 @@ const Featured = () => {
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="flex items-center gap-3">
                 <button onClick={() => dispatchJobDescription(job)} className="w-full border-2 border-[#800000] text-[#800000] hover:bg-[#800000] hover:text-white px-4 py-2 rounded-sm text-sm font-bold transition-all">
                   View Details
                 </button>

@@ -10,11 +10,12 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { JobApplicationWithDetails } from "../../types/jobApplication.types";
+import Link from "next/link";
 
 interface ApplicationCardProps {
   application: JobApplicationWithDetails;
-  onView?: (applicationId: string) => void;
-  onDelete?: (applicationId: string) => void;
+  onView: (id: string) => void;
+  onDelete: (id: string) => void;
   className?: string;
 }
 
@@ -171,27 +172,19 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-        {onView && (
-          <button
-            onClick={() => onView(application.id)}
-            className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
-          >
-            View Details
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        )}
-        {onDelete && application.status === "pending" && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(application.id);
-            }}
-            className="text-red-600 hover:text-red-700 font-medium text-sm"
-          >
-            Withdraw
-          </button>
-        )}
+      <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
+        <button
+          onClick={() => onView(application.id)}
+          className="text-sm font-medium text-blue-600 hover:text-blue-700"
+        >
+          View Details
+        </button>
+        <button
+          onClick={() => onDelete(application.id)}
+          className="text-red-600 hover:text-red-700 font-medium text-sm"
+        >
+          Withdraw
+        </button>
       </div>
     </div>
   );

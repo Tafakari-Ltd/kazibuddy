@@ -6,6 +6,8 @@ import { useMyApplications } from "../../Redux/Functions/jobs";
 import ApplicationCard from "./ApplicationCard";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import ApplicationDetailsModal from "./ApplicationDetailsModal";
+import { JobApplicationWithDetails } from "@/types/jobApplication.types";
 
 interface MyApplicationsSectionProps {
   className?: string;
@@ -35,6 +37,7 @@ export const MyApplicationsSection: React.FC<MyApplicationsSectionProps> = ({
     "all" | "pending" | "reviewed" | "accepted" | "rejected"
   >("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedApplication, setSelectedApplication] = useState<JobApplicationWithDetails | null>(null);
 
   // Fetch applications with pagination when showAll is true
   useEffect(() => {
@@ -60,7 +63,10 @@ export const MyApplicationsSection: React.FC<MyApplicationsSectionProps> = ({
     : applications.slice(0, maxItems);
 
   const handleView = (applicationId: string) => {
-    router.push(`/applications/${applicationId}`);
+    const app = applications.find(a => a.id === applicationId);
+    if (app) {
+      setSelectedApplication(app as JobApplicationWithDetails);
+    }
   };
 
   const handleDelete = async (applicationId: string) => {
@@ -458,6 +464,10 @@ export const MyApplicationsSection: React.FC<MyApplicationsSectionProps> = ({
           )}
         </>
       )}
+       <ApplicationDetailsModal 
+        application={selectedApplication}
+        onClose={() => setSelectedApplication(null)}
+      />
     </div>
   );
 };
