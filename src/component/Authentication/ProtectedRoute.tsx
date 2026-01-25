@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -14,8 +13,6 @@ interface ProtectedRouteProps {
 const allowedUnauthenticatedPaths = [
   "/",
   "/jobs",
-  "/jobs/users/applications",
-  "/jobs/users/alerts",
   "/auth/login",
   "/auth/signup",
   "/auth/signup/worker",
@@ -39,65 +36,57 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     const sessionIsAuthenticated = sessionStorage.getItem("isAuthenticated") === "true";
     const isAuthenticated = reduxIsAuthenticated || sessionIsAuthenticated;
 
-    // Check if the exact path is in the allowed list
-    const isAllowed = allowedUnauthenticatedPaths.includes(pathname);
+    // 2. Check if path is allowed publicly
+    const isExactPublicPath = allowedUnauthenticatedPaths.includes(pathname);
+    
+    // Allow dynamic job details pages: /jobs/[id]
+    // But block /jobs/users/..., /jobs/create, etc. if not logged in
+    const isPublicJobPage = pathname.startsWith("/jobs/") && 
+                            !pathname.includes("/users") && 
+                            !pathname.includes("/create");
+
+    const isAllowed = isExactPublicPath || isPublicJobPage;
 
     if (!isAuthenticated && !isAllowed) {
-      router.replace(`/auth/login?returnTo=${pathname}`);
+      // Redirect to login if path is private
+      router.replace(`/auth/login?returnTo=${encodeURIComponent(pathname)}`);
       setAuthorized(false);
       return;
     }
 
-    // Role-based Access Control & Profile Verification
+    // Role-based Access Control & Profile Verification (Only runs if authenticated)
     if (isAuthenticated && user) {
       const userRole = user.role || user.user_type;
-
-
       const isProfileComplete = user.full_name && user.phone_number;
-
       const isVerified = user.is_verified || user.email_verified || user.is_active;
-
-
       const isSetupPage = searchParams.get("setup") === "1";
-
 
       if (!isProfileComplete && !user.is_superuser) {
         if (!isSetupPage) {
           if (userRole === "worker") router.replace("/worker?setup=1");
           else if (userRole === "employer") router.replace("/employer?setup=1");
-          else router.replace("/worker?setup=1"); // Default
-
+          else router.replace("/worker?setup=1");
           setAuthorized(false);
           return;
         }
-
         setAuthorized(true);
         return;
       }
 
-
       if (!isVerified && !user.is_superuser && !isSetupPage) {
         toast.info("Account pending approval. Please wait for verification.");
-
         if (userRole === "worker") router.replace("/worker?setup=1");
         else if (userRole === "employer") router.replace("/employer?setup=1");
-
         setAuthorized(false);
         return;
       }
-
-
 
       // Admin Routes Protection
       if (pathname.startsWith("/admin") || pathname.startsWith("/adminpanel")) {
         const isAdmin = user.is_staff || user.is_superuser || userRole === "admin";
         if (!isAdmin) {
           toast.error("Unauthorized access. Admin privileges required.");
-
-          if (userRole === "employer") router.replace("/employer");
-          else if (userRole === "worker") router.replace("/worker");
-          else router.replace("/");
-
+          router.replace(userRole === "employer" ? "/employer" : "/worker");
           setAuthorized(false);
           return;
         }
@@ -108,9 +97,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         const isEmployer = userRole === "employer" || userRole === "admin";
         if (!isEmployer) {
           toast.error("Unauthorized access. Employer account required.");
-          if (userRole === "worker") router.replace("/worker");
-          else router.replace("/");
-
+          router.replace(userRole === "worker" ? "/worker" : "/");
           setAuthorized(false);
           return;
         }
@@ -121,9 +108,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         const isWorker = userRole === "worker" || userRole === "admin";
         if (!isWorker) {
           toast.error("Unauthorized access. Worker account required.");
-          if (userRole === "employer") router.replace("/employer");
-          else router.replace("/");
-
+          router.replace(userRole === "employer" ? "/employer" : "/");
           setAuthorized(false);
           return;
         }
@@ -133,11 +118,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     setAuthorized(true);
   }, [router, pathname, user, reduxIsAuthenticated, searchParams]);
 
-  if (authorized === null) {
-    return null;
-  }
-
-  if (authorized === false) {
+  if (authorized === null || authorized === false) {
     return null;
   }
 
