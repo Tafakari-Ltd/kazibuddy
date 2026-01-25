@@ -8,6 +8,7 @@ import MainLayoutWrapper from "@/customLayouts/MainLayoutWrapper/MainLayoutWrapp
 import ApplyJob from "@/component/ApplyJob/ApplyJob";
 import JobMoreDescription from "@/component/common/JobMoreDescription/JobMoreDescription";
 import ProtectedRoute from "@/component/Authentication/ProtectedRoute";
+import ChatLayoutWrapper from "@/components/Layout/ChatLayoutWrapper";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -29,7 +30,12 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${outfit.variable} antialiased`}>
         <Providers>
+          
           <Suspense fallback={<div>Loading app...</div>}>
+          {/* <ChatLayoutWrapper>
+            {children}
+          </ChatLayoutWrapper>  */}
+          
             <ProtectedRoute>
               <MainLayoutWrapper>
                 {children}
