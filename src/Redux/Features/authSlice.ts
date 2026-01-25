@@ -1,4 +1,3 @@
-
 "use client";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "@/lib/axios";
@@ -192,13 +191,16 @@ export const adminCreateUser = createAsyncThunk<
 
 export const loginWithGoogle = createAsyncThunk<
   { accessToken: string; refreshToken: string; userId: string; user: any; userCreated: boolean; pendingApproval?: boolean },
-  { accessToken: string },
+  { accessToken: string; user_type?: string },
   { rejectValue: string }
->("auth/loginWithGoogle", async ({ accessToken: googleToken }, { rejectWithValue }) => {
+>("auth/loginWithGoogle", async ({ accessToken: googleToken, user_type }, { rejectWithValue }) => {
   try {
-    const res = await api.post("/v1/auth/google/", {
-      access_token: googleToken,
-    });
+    const payload: any = { access_token: googleToken };
+    if (user_type) {
+      payload.user_type = user_type;
+    }
+
+    const res = await api.post("/v1/auth/google/", payload);
 
     const data = res as any;
 
@@ -231,7 +233,7 @@ export const loginWithGoogle = createAsyncThunk<
 
     if (!accessToken) return rejectWithValue("Invalid response from server");
 
-    // DON'T persist tokens yet - wait until we verify the user is approved
+    
 
     // FETCH PROFILE to verify user is approved
     try {

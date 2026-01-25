@@ -9,6 +9,15 @@ interface GoogleAuthButtonProps {
 
 export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ userType, label = "Continue with Google" }) => {
   const handleClick = () => {
+    // 1. Save the intent before redirecting to Google
+    if (userType) {
+      sessionStorage.setItem("google_auth_intent", userType);
+    } else {
+      // Clear any stale intent if on a generic login page
+      sessionStorage.removeItem("google_auth_intent");
+    }
+
+    // 2. Initiate the redirect
     initiateGoogleLogin(userType);
   };
 

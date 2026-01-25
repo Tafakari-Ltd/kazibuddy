@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/Redux/Store/Store";
+import { loadSession } from "@/Redux/Features/authSlice"; // Import loadSession
 import api from "@/lib/axios";
 import { toast } from "sonner";
 
@@ -36,28 +37,35 @@ export default function GoogleCallbackPage() {
             }
 
             try {
-                // Extract user_type from state parameter
-                let userType = null;
-                if (stateParam) {
+                // 1. PRIMARY CHECK: Read from Session Storage (The most reliable method)
+                let userType = sessionStorage.getItem('google_auth_intent');
+
+                // 2. BACKUP CHECK: Extract from state parameter if storage is empty
+                if (!userType && stateParam) {
                     try {
                         const stateData = JSON.parse(decodeURIComponent(stateParam));
-                        userType = stateData.user_type;
+                        if (stateData.user_type) {
+                            userType = stateData.user_type;
+                        }
                     } catch (e) {
                         console.warn("Failed to parse state parameter", e);
                     }
                 }
 
-                // Send the authorization code and user_type to your Django backend
+                // 3. Construct URL with user_type
+                // explicitly append it to the backend call
                 let url = `/v1/auth/google/callback/?code=${code}`;
                 if (userType) {
                     url += `&user_type=${userType}`;
                 }
 
                 const response = await api.get(url);
-
                 const data = response as any;
 
-                // Check if pending approval
+                // Clear the intent now that it has been used
+                sessionStorage.removeItem('google_auth_intent');
+
+                // Check for pending approval or newly created user
                 if (data.pending_approval || data.user_created) {
                     toast.success(
                         data.message || "Account created! Pending admin approval.",
@@ -70,7 +78,7 @@ export default function GoogleCallbackPage() {
                 // Success - user is approved and logged in
                 if (data.tokens) {
                     const { access, refresh } = data.tokens;
-
+                    
                     // Store tokens
                     sessionStorage.setItem("accessToken", access);
                     if (refresh) sessionStorage.setItem("refreshToken", refresh);
@@ -78,17 +86,24 @@ export default function GoogleCallbackPage() {
                     sessionStorage.setItem("user", JSON.stringify(data.user_info || {}));
                     sessionStorage.setItem("isAuthenticated", "true");
 
-                    // Set cookie
+                    // Set cookie for middleware/server-side checks
                     document.cookie = `accessToken=${access}; path=/; max-age=86400; SameSite=Lax; Secure`;
+
+                    // Sync Redux State so the UI updates immediately
+                    dispatch(loadSession());
 
                     toast.success("Logged in successfully!");
 
-                    // Redirect based on user type
-                    const userType = data.user_info?.user_type || data.user_type;
-                    if (userType === "employer") {
+                    // Redirect based on the ACTUAL user type returned from backend
+                    // This handles the case where an existing user logs in (ignoring the intent)
+                    const finalUserType = data.user_info?.user_type || data.user_type;
+                    
+                    if (finalUserType === "employer") {
                         router.push("/employer");
-                    } else if (userType === "worker") {
+                    } else if (finalUserType === "worker") {
                         router.push("/worker");
+                    } else if (data.user_info?.is_superuser) {
+                        router.push("/admin");
                     } else {
                         router.push("/");
                     }
@@ -99,6 +114,7 @@ export default function GoogleCallbackPage() {
                 console.error("Google callback error:", err);
                 const errorMessage = err?.message || "Authentication failed";
 
+                // Handle pending approval error gracefully
                 if (errorMessage.toLowerCase().includes("pending") ||
                     errorMessage.toLowerCase().includes("approval")) {
                     toast.success(errorMessage, { duration: 6000 });
