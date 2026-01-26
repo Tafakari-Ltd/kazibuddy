@@ -4,14 +4,15 @@ import Navbar from "../Navbar/Navbar";
 import { Search, Briefcase, MapPin, Layers, ChevronDown, Users, Star } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation"; 
 import { AppDispatch, RootState } from "@/Redux/Store/Store";
 import { fetchCategories } from "@/Redux/Features/jobs/jobsCategories/jobCategories";
-import { setFilters } from "@/Redux/Features/jobsSlice";
 import { toast } from "sonner";
 
 const Hero = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All categories");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(""); // Track ID separately
   const [searchQuery, setSearchQuery] = useState("");
   const [locationQuery, setLocationQuery] = useState("");
   const [selectedJobType, setSelectedJobType] = useState<string | null>(null);
@@ -20,6 +21,8 @@ const Hero = () => {
   const HERO_IMAGE_URL = "/hero.jpg";
 
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter(); // Initialize router
+  
   const { categories, loading, error } = useSelector(
     (state: RootState) => state.categories
   );
@@ -30,9 +33,9 @@ const Hero = () => {
     if (categories.length === 0 && !loading) {
       dispatch(fetchCategories());
     }
-  }, []);
+  }, []); 
 
-  
+  // Calculate job counts
   useEffect(() => {
     const counts: Record<string, number> = {};
     
@@ -43,15 +46,12 @@ const Hero = () => {
         if (job.category && typeof job.category === 'object' && job.category.id) {
             categoryId = job.category.id;
         } 
-
         else if (typeof job.category === 'string') {
-          
             const matchById = categories.find(cat => cat.id === job.category);
             
             if (matchById) {
                 categoryId = matchById.id;
             } else {
-                
                 const matchByName = categories.find(
                     cat => cat.name.toLowerCase() === job.category.toLowerCase()
                 );
@@ -71,39 +71,30 @@ const Hero = () => {
 
   
   const handleSearch = () => {
-  
-    const filters: any = {
-      page: 1,
-      limit: 12,
-      status: 'active' 
-    };
+    // Construct URLSearchParams
+    const params = new URLSearchParams();
 
+    // 1. Search Query 
     if (searchQuery.trim()) {
-      filters.search_query = searchQuery.trim();
+      params.append("q", searchQuery.trim());
     }
 
-  
+    // 2. Location
     if (locationQuery.trim()) {
-      filters.location = locationQuery.trim();
+      params.append("location", locationQuery.trim());
     }
 
-  
-    if (selectedCategory && selectedCategory !== "All categories") {
-  
-      const category = categories.find(cat => cat.name === selectedCategory);
-      if (category) {
-        filters.category = category.id;
-      }
+    // 3. Category
+    if (selectedCategory !== "All categories" && selectedCategoryId) {
+      params.append("category", selectedCategoryId);
     }
 
-  
+    // 4. Job Type
     if (selectedJobType) {
-      filters.job_type = selectedJobType;
+      params.append("job_type", selectedJobType);
     }
 
-  
-    dispatch(setFilters(filters));
-
+   
     const searchTerms = [];
     if (searchQuery) searchTerms.push(`"${searchQuery}"`);
     if (locationQuery) searchTerms.push(`in ${locationQuery}`);
@@ -113,47 +104,40 @@ const Hero = () => {
       toast.success(`Searching for ${searchTerms.join(' ')}`);
     }
 
-    scrollToJobs();
+   
+    router.push(`/jobs?${params.toString()}`);
   };
 
   const handleQuickCategorySearch = (category: any) => {
     setSelectedCategory(category.name);
-    
-    
-    const filters: any = {
-      page: 1,
-      limit: 12,
-      status: 'active',
-      category: category.id 
-    };
-
-    if (searchQuery.trim()) filters.search_query = searchQuery.trim();
-    if (locationQuery.trim()) filters.location = locationQuery.trim();
-    if (selectedJobType) filters.job_type = selectedJobType;
-
-    dispatch(setFilters(filters));
+    setSelectedCategoryId(category.id);
     
     toast.success(`Showing ${category.name} jobs`);
-    scrollToJobs();
+    
+    // Direct navigation for quick category click
+    router.push(`/jobs?category=${category.id}`);
   };
 
   const scrollToJobs = () => {
+   
     const jobsSection = document.getElementById('jobs-section');
     if (jobsSection) {
       jobsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
-      window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
+      
+        router.push('/jobs');
     }
   };
 
-  const handleCategorySelect = (categoryName: string) => {
+  const handleCategorySelect = (categoryName: string, categoryId: string = "") => {
     setSelectedCategory(categoryName);
+    setSelectedCategoryId(categoryId);
     setDropdownOpen(false);
   };
 
   const handleKeywordClick = (keyword: string) => {
-    setSelectedCategory(keyword);
     setSearchQuery(keyword);
+   
   };
 
   return (
@@ -289,7 +273,7 @@ const Hero = () => {
                             return (
                               <li
                                 key={cat.id}
-                                onClick={() => handleCategorySelect(cat.name)}
+                                onClick={() => handleCategorySelect(cat.name, cat.id)}
                                 className={`px-4 py-2 cursor-pointer transition flex items-center justify-between group ${
                                   selectedCategory === cat.name
                                     ? "bg-[#800000] text-white font-medium"

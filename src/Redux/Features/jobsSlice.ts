@@ -46,6 +46,8 @@ export const fetchJobs = createAsyncThunk<
           if (key === "limit") {
             queryParams.append("page_size", value.toString());
             hasLimit = true;
+          } else if (key === "search_query") {
+            queryParams.append("q", value.toString());
           } else {
             queryParams.append(key, value.toString());
           }
@@ -54,11 +56,11 @@ export const fetchJobs = createAsyncThunk<
     }
 
     if (!hasLimit) {
-      queryParams.append("page_size", "1000");
+      queryParams.append("page_size", "10");
     }
 
     const queryString = queryParams.toString();
-    const url = `/jobs/${queryString ? `?${queryString}` : ""}`;
+    const url = `/jobs/search/${queryString ? `?${queryString}` : ""}`;
 
     const response = await api.get(url);
     return response as any;
@@ -259,7 +261,6 @@ const jobsSlice = createSlice({
       })
       .addCase(fetchJobs.fulfilled, (state, action) => {
         state.loading = false;
-        
         const payload = action.payload as any;
 
         if (payload.results && !Array.isArray(payload.results) && payload.results.data && Array.isArray(payload.results.data)) {
@@ -296,7 +297,6 @@ const jobsSlice = createSlice({
         state.error = action.payload as string;
       });
 
-   
     builder
       .addCase(fetchFeaturedJobs.fulfilled, (state, action) => {
         const payload = action.payload as any;
@@ -312,14 +312,10 @@ const jobsSlice = createSlice({
             rawJobs = payload;
         }
 
-        
         state.featuredJobs = rawJobs.map((job) => ({
             ...job,
-           
             category: job.category || (job.category_name ? { name: job.category_name } : { name: "General" }),
-            
             employer: job.employer || (job.employer_name ? { company_name: job.employer_name } : null),
-            
             description: job.description || "View details to see full job description.",
         }));
       });
@@ -457,7 +453,6 @@ const jobsSlice = createSlice({
         state.error = action.payload as string;
       });
 
-    // Toggle Featured
     builder
       .addCase(toggleJobFeatured.pending, (state) => {
         state.loading = true;

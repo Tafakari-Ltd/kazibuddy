@@ -9,6 +9,7 @@ import { AppDispatch, RootState } from "@/Redux/Store/Store";
 import { openJobModal, setSelectedJob } from "@/Redux/Features/ApplyJobSlice";
 import { openJobDescription } from "@/Redux/Features/JobDescriptionSlice";
 import { fetchUserWorkerProfile } from "@/Redux/Features/workerProfilesSlice";
+import { fetchJobById } from "@/Redux/Features/jobsSlice"; // Import fetchJobById
 import { useJobs } from "@/Redux/Functions/useJobs";
 import { useCategories } from "@/Redux/Functions/useCategories";
 import { Job } from "@/types/job.types";
@@ -19,33 +20,40 @@ const JobListPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Redux State
   const { isAuthenticated, userId } = useSelector((state: RootState) => state.auth);
   const { userProfile } = useSelector((state: RootState) => state.workerProfiles);
   const { jobs, loading, handleFetchJobs, handleFetchJobsByCategory } = useJobs();
   const { categories, handleFetchCategories } = useCategories();
 
   const [activeCategoryId, setActiveCategoryId] = useState<string>("all");
-  
-  // Ref to prevent duplicate toasts on redirect
   const toastShownRef = useRef(false);
 
   useEffect(() => {
     handleFetchCategories();
-    handleFetchJobs();
   }, []);
 
+  // Handle Search Params for filtering the list
   useEffect(() => {
-    if (activeCategoryId === "all") {
-      handleFetchJobs();
+    const query = searchParams.get("q");
+    const location = searchParams.get("location");
+    
+    // Only fetch list if we are NOT trying to open a specific ID immediately
+    // or if we want background list to match search
+    if (query || location) {
+        handleFetchJobs({
+            search_query: query || "",
+            location: location || ""
+        });
+        setActiveCategoryId(""); 
+    } else if (activeCategoryId === "all") {
+        handleFetchJobs();
     } else if (activeCategoryId) {
-      handleFetchJobsByCategory(activeCategoryId);
+        handleFetchJobsByCategory(activeCategoryId);
     }
-  }, [activeCategoryId]);
+  }, [activeCategoryId, searchParams, handleFetchJobs, handleFetchJobsByCategory]);
 
   const visibleJobs: Job[] = useMemo(() => jobs, [jobs]);
 
-  // Helper to open the slide-over description
   const dispatchJobDescription = useCallback((job: Job) => {
     dispatch(
       openJobDescription({
@@ -61,24 +69,19 @@ const JobListPage = () => {
     );
   }, [dispatch]);
 
-  // Handle "View Details" Click
   const handleViewDetails = (job: Job) => {
     dispatchJobDescription(job);
   };
 
-  // Handle "Apply Now" Click 
   const handleApply = useCallback(
     async (job: Job) => {
-      // 1. Check Authentication
       if (!isAuthenticated) {
         const currentPath = window.location.pathname;
-        // Add applyJobId to query params so we know which job to open after login
         const returnUrl = `${currentPath}?applyJobId=${job.id}`;
         router.push(`/auth/login?returnTo=${encodeURIComponent(returnUrl)}`);
         return;
       }
       
-      // 2. Check Worker Profile
       if (userId && !userProfile) {
         try {
            const result = await dispatch(fetchUserWorkerProfile(userId)).unwrap();
@@ -94,7 +97,6 @@ const JobListPage = () => {
         }
       }
       
-      // 3. Open Application Modal
       dispatchJobDescription(job); 
       dispatch(setSelectedJob(job as unknown as JobDetails));
       dispatch(openJobModal()); 
@@ -102,7 +104,7 @@ const JobListPage = () => {
     [dispatch, isAuthenticated, userProfile, userId, router, dispatchJobDescription]
   );
 
-  // Check for Redirect Return (Recover Intent)
+  // Handle Direct Job Opening via ID (from Search or Link)
   useEffect(() => {
     const applyJobIdParam = searchParams.get("applyJobId");
     
@@ -111,60 +113,68 @@ const JobListPage = () => {
       return;
     }
 
-    const handleRedirectApply = async () => {
-      // Only proceed if authenticated and jobs are loaded
-      if (applyJobIdParam && isAuthenticated && !loading && visibleJobs.length > 0) {
-        if (toastShownRef.current) return;
+    const openJob = async () => {
+       // Check if job is already in the list
+       let jobToApply = visibleJobs.find((j) => String(j.id) === applyJobIdParam);
 
-        const jobId = applyJobIdParam;
-        const jobToApply = visibleJobs.find((j) => String(j.id) === jobId);
+       // If not in list, fetch it specifically
+       if (!jobToApply) {
+         try {
+           const fetchedJob = await dispatch(fetchJobById(applyJobIdParam)).unwrap();
+          
+           jobToApply = (fetchedJob as any).data || fetchedJob;
+         } catch (error) {
+           console.error("Could not fetch job details", error);
+         }
+       }
 
-        if (jobToApply) {
-           // Verify profile exists before opening modal
-           if (userId && !userProfile) {
-              try {
-                 const result = await dispatch(fetchUserWorkerProfile(userId)).unwrap();
-                 if (!result) {
-                    if (!toastShownRef.current) {
-                        toast.info("Please create a worker profile");
-                        toastShownRef.current = true;
-                    }
-                    router.push("/worker");
-                    return;
-                 }
-              } catch {
-                 if (!toastShownRef.current) {
-                    toast.info("Please create a worker profile");
-                    toastShownRef.current = true;
-                 }
-                 router.push("/worker");
-                 return;
-              }
-           }
+       if (jobToApply) {
+          if (!isAuthenticated) {
            
-           toastShownRef.current = true;
-           toast.success("Welcome back! Continue with your application");
-           
-           // Scroll to job and open modal
-           document.getElementById(`job-card-${jobId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-           dispatchJobDescription(jobToApply);
-           dispatch(setSelectedJob(jobToApply as unknown as JobDetails));
-           dispatch(openJobModal());
-           
-           // Clean up URL without refreshing
-           router.replace(window.location.pathname, { scroll: false });
-        }
-      }
+          }
+          
+          if (isAuthenticated) {
+             // Verify Profile
+             if (userId && !userProfile) {
+                 try {
+                     const hasProfile = await dispatch(fetchUserWorkerProfile(userId)).unwrap();
+                     if (!hasProfile) {
+                         if (!toastShownRef.current) {
+                             toast.info("Please create a worker profile");
+                             toastShownRef.current = true;
+                         }
+                         router.push("/worker");
+                         return;
+                     }
+                 } catch { return; }
+             }
+
+             if (!toastShownRef.current) {
+                 toast.success("Opening job details...");
+                 toastShownRef.current = true;
+             }
+
+             // Open Modal
+             dispatchJobDescription(jobToApply as Job);
+             dispatch(setSelectedJob(jobToApply as unknown as JobDetails));
+             dispatch(openJobModal());
+             
+             // Clean URL
+             router.replace("/jobs", { scroll: false });
+          }
+       }
     };
-    handleRedirectApply();
-  }, [searchParams, isAuthenticated, dispatch, router, visibleJobs, loading, userId, userProfile, dispatchJobDescription]);
+
+    if (isAuthenticated) {
+        openJob();
+    }
+  }, [searchParams, isAuthenticated, dispatch, router, visibleJobs, userId, userProfile, dispatchJobDescription]);
 
 
   return (
     <div className="mx-auto px-6 md:px-12 py-12">
       <h1 className="text-4xl font-bold text-[#800000] mb-6 container">Jobs</h1>
 
-      {/* Category Filter */}
       <div className="flex flex-wrap gap-2 mb-10 container">
         <button
           onClick={() => setActiveCategoryId("all")}
@@ -191,7 +201,6 @@ const JobListPage = () => {
         ))}
       </div>
 
-      {/* Jobs Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-12 container">
         {loading && visibleJobs.length === 0 && (
           <p className="text-gray-600 col-span-full">Loading jobs...</p>
