@@ -1,6 +1,6 @@
 "use client";
 
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch, useSelector, shallowEqual } from "react-redux";
 import { AppDispatch, RootState } from "../Store/Store";
 import {
   openJobModal,
@@ -51,7 +51,7 @@ export const useJobApplicationModal = () => {
     isSubmitting: state.applyJob.isSubmitting,
     apiError: state.applyJob.apiError,
     successMessage: state.applyJob.successMessage,
-  }));
+  }), shallowEqual);
 
   const showJobModal = useCallback(() => {
     dispatch(openJobModal());
@@ -100,6 +100,7 @@ export const useJobApplicationForm = () => {
       errors: state.applyJob.errors,
       isSubmitting: state.applyJob.isSubmitting,
     }),
+    shallowEqual
   );
 
   const setCoverLetterValue = useCallback(
@@ -179,6 +180,7 @@ export const useMyApplications = () => {
       apiError: state.applyJob.apiError,
       pagination: state.applyJob.pagination,
     }),
+    shallowEqual
   );
 
   const fetchApplications = useCallback(
@@ -230,6 +232,7 @@ export const useJobApplications = (jobId?: string) => {
       apiError: state.applyJob.apiError,
       stats: state.applyJob.stats,
     }),
+    shallowEqual
   );
 
   const fetchApplications = useCallback(
@@ -287,6 +290,7 @@ export const useApplicationDetails = (applicationId?: string) => {
       isLoading: state.applyJob.isLoading,
       apiError: state.applyJob.apiError,
     }),
+    shallowEqual
   );
 
   const fetchDetails = useCallback(() => {
@@ -324,7 +328,7 @@ export const useApplicationMessages = () => {
   const { successMessage, apiError } = useSelector((state: RootState) => ({
     successMessage: state.applyJob.successMessage,
     apiError: state.applyJob.apiError,
-  }));
+  }), shallowEqual);
 
   const setSuccess = useCallback(
     (message: string) => {

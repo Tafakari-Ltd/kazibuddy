@@ -11,10 +11,9 @@ import {
 import { RootState } from "@/Redux/Store/Store";
 import { useWorkerProfiles } from "@/Redux/Functions/useWorkerProfiles";
 import { useJobs } from "@/Redux/Functions/useJobs";
-import { formatAvailabilitySchedule, CreateWorkerProfileData } from "@/types/worker.types";
+import { CreateWorkerProfileData } from "@/types/worker.types";
 import { JobDetails } from "@/types/jobApplication.types";
 
-import WorkerDashboardWelcome from "@/components/WorkerDashboard/WorkerDashboardWelcome";
 import WorkerStatsCards from "@/components/WorkerDashboard/WorkerStatsCards";
 import WorkerProfileForm from "@/components/WorkerDashboard/WorkerProfileForm";
 import WorkerTabs from "@/components/WorkerDashboard/WorkerTabs";
@@ -48,6 +47,7 @@ const WorkerDashboardPage = () => {
     error: profileError,
     successMessage,
     handleFetchUserWorkerProfile,
+    handleLoadWorkerProfileFromStorage,
     handleCreateWorkerProfile,
     handleUpdateWorkerProfile,
     handleClearState,
@@ -61,11 +61,41 @@ const WorkerDashboardPage = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
+  const [hydratedUserProfile, setHydratedUserProfile] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = sessionStorage.getItem('userWorkerProfile');
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  // Effective profile used for rendering (prefer latest redux profile)
+  const effectiveUserProfile = userProfile || hydratedUserProfile;
+  const effectiveHasUserProfile = !!effectiveUserProfile;
+
   const [availableJobs, setAvailableJobs] = useState<JobDetails[]>([]);
   const [jobsLoading, setJobsLoading] = useState(false);
   const [jobsError, setJobsError] = useState<string | null>(null);
 
   useEffect(() => { setIsClient(true); }, []);
+
+
+  useEffect(() => {
+    handleLoadWorkerProfileFromStorage();
+    // Keep local hydrated copy in sync when redux profile arrives
+    if (userProfile) {
+      try {
+        sessionStorage.setItem('userWorkerProfile', JSON.stringify(userProfile));
+      } catch (e) {
+        // ignore
+      }
+      setHydratedUserProfile(userProfile);
+    }
+  }, [handleLoadWorkerProfileFromStorage]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -73,6 +103,7 @@ const WorkerDashboardPage = () => {
     }
   }, [searchParams]);
 
+  // 2. Fresh Fetch: Update data from API in background
   useEffect(() => {
     if (currentUserId && isAuthenticated) {
       handleFetchUserWorkerProfile(currentUserId);
@@ -80,15 +111,16 @@ const WorkerDashboardPage = () => {
   }, [currentUserId, isAuthenticated, handleFetchUserWorkerProfile]);
 
   useEffect(() => {
-    if (setupProfile === "1") {
-      if (!hasUserProfile()) {
+    // Only show modal if we are NOT loading and definitely have no profile
+    if (setupProfile === "1" && !profileLoading && isAuthenticated && isClient) {
+      if (!effectiveHasUserProfile) {
         setShowProfileModal(true);
         setFilter("Profile");
       } else {
         setFilter("Dashboard");
       }
     }
-  }, [setupProfile, hasUserProfile]);
+  }, [setupProfile, hasUserProfile, profileLoading, isAuthenticated, isClient]);
 
   useEffect(() => {
     if (successMessage) {
@@ -181,8 +213,19 @@ const WorkerDashboardPage = () => {
     }
   };
 
-  if (!isClient || (profileLoading && !userProfile)) {
+  if (!isClient) {
     return (
+      <div className="px-4 md:px-6 lg:px-8 py-6 bg-gray-50 min-h-screen max-w-7xl mx-auto">
+        <div className="animate-pulse space-y-4">
+          <div className="h-20 bg-gray-200 rounded-lg w-full"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Prevent flash of "No Profile" if we are loading and don't have a profile yet
+  if (profileLoading && !userProfile) {
+     return (
       <div className="px-4 md:px-6 lg:px-8 py-6 bg-gray-50 min-h-screen max-w-7xl mx-auto">
         <div className="animate-pulse space-y-4">
           <div className="h-20 bg-gray-200 rounded-lg w-full"></div>
@@ -198,25 +241,20 @@ const WorkerDashboardPage = () => {
     <div className="px-6 md:px-12 py-8 bg-gray-50 min-h-screen">
       <div className="container mb-6">
         
-        {/* Compact Header with Quick Actions */}
         <WorkerDashboardHeader
           userName={(typeof userProfile?.user !== 'string' ? userProfile?.user?.full_name : undefined) || user?.full_name}
           availableJobsCount={availableJobs.length}
           profileCompletionPercentage={userProfile?.profile_completion_percentage || 0}
         />
 
-        {/* Profile Setup Alert */}
-        {!hasUserProfile() && (
+        {!effectiveHasUserProfile && !profileLoading && (
           <WorkerProfileSetupAlert onCreateProfile={() => setShowProfileModal(true)} />
         )}
 
-        {/* Stats Cards */}
-        {hasUserProfile() && <WorkerStatsCards />}
+        {effectiveHasUserProfile && <WorkerStatsCards />}
 
-        {/* Navigation Tabs */}
         <WorkerTabs activeTab={filter} setTab={setFilter} options={STATUS_OPTIONS} />
 
-        {/* DASHBOARD VIEW */}
         {filter === "Dashboard" && (
           <WorkerDashboardView
             availableJobs={availableJobs}
@@ -228,10 +266,9 @@ const WorkerDashboardPage = () => {
           />
         )}
 
-        {/* FIND JOBS VIEW */}
-        {filter === "Find Jobs" && (
-          <div>
-            {hasUserProfile() ? (
+            {filter === "Find Jobs" && (
+              <div>
+            {effectiveHasUserProfile ? (
               <AvailableJobs 
                 jobs={availableJobs} 
                 loading={jobsLoading} 
@@ -256,10 +293,9 @@ const WorkerDashboardPage = () => {
           </div>
         )}
 
-        {/* MY APPLICATIONS VIEW */}
         {filter === "My Applications" && (
           <div>
-            {hasUserProfile() ? (
+            {effectiveHasUserProfile ? (
               <MyApplicationsSection showAll={true} />
             ) : (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8 text-center">
@@ -279,10 +315,9 @@ const WorkerDashboardPage = () => {
           </div>
         )}
 
-        {/* PROFILE VIEW */}
         {filter === "Profile" && (
           <div className="space-y-6">
-            {!userProfile ? (
+            {!effectiveUserProfile ? (
               <div className="bg-white rounded-lg shadow-sm p-8 text-center">
                 <h3 className="text-xl font-semibold mb-4">No Profile Found</h3>
                 <p className="text-gray-600 mb-6">Create your worker profile to get started</p>
@@ -296,23 +331,23 @@ const WorkerDashboardPage = () => {
             ) : (
               <WorkerProfileView
                 worker={{
-                  id: userProfile.id,
+                  id: effectiveUserProfile.id,
                   firstName: user?.full_name?.split(' ')[0] || 'Worker',
                   lastName: user?.full_name?.split(' ').slice(1).join(' ') || '',
                   email: user?.email || '',
                   phone: user?.phone_number || '',
-                  location: userProfile.location_text || userProfile.location,
+                  location: effectiveUserProfile.location_text || effectiveUserProfile.location,
                   avatarUrl: undefined,
-                  bio: userProfile.bio,
-                  title: `${userProfile.years_experience} years experience`,
+                  bio: effectiveUserProfile.bio,
+                  title: `${effectiveUserProfile.years_experience} years experience`,
                   skills: [],
-                  availability: userProfile.is_available ? "Available" : "Offline",
+                  availability: effectiveUserProfile.is_available ? "Available" : "Offline",
                   rating: 0,
                   completedJobs: 0,
-                  joinedDate: new Date(userProfile.created_at).toLocaleDateString(),
+                  joinedDate: new Date(effectiveUserProfile.created_at).toLocaleDateString(),
                   experience: [],
                   certifications: [],
-                  isVerified: userProfile.verification_status === 'verified'
+                  isVerified: effectiveUserProfile.verification_status === 'verified'
                 }}
                 onEdit={() => setShowEditModal(true)}
               />
@@ -320,10 +355,8 @@ const WorkerDashboardPage = () => {
           </div>
         )}
 
-        {/* SETTINGS VIEW */}
         {filter === "Settings" && <WorkerSettingsView />}
 
-        {/* Profile Modal */}
         {(showProfileModal || showEditModal) && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
             <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto my-8">

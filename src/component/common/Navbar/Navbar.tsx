@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, User, ChevronDown, Search, X } from "lucide-react";
@@ -94,8 +95,25 @@ const Navbar: React.FC = () => {
     <header className="w-full bg-white shadow-md fixed top-0 z-30">
       <div className="mx-auto h-[55px] px-4 md:px-6 flex items-center justify-between relative container">
         {/* Logo */}
-        <Link href="/" className="text-2xl font-extrabold text-maroon">
-          Kazi<span className="text-gray-800">Buddy</span>
+        <Link href="/" className="flex items-center gap-2">
+          {/* Circular logo */}
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden flex items-center justify-center">
+            <Image
+              src="/logo.jpeg"
+              alt="KaziBuddy"
+              width={48}
+              height={48}
+              className="w-full h-full object-cover"
+              priority
+            />
+          </div>
+
+          {/* Show full brand name only on the homepage */}
+          {pathname === "/" && (
+            <span className="hidden sm:inline-block text-2xl font-extrabold text-maroon ml-2">
+              Kazi<span className="text-gray-800">Buddy</span>
+            </span>
+          )}
         </Link>
 
         {/* Desktop Navigation */}

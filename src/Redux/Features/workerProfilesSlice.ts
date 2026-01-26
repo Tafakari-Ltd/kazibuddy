@@ -29,9 +29,6 @@ const initialState: WorkerProfileState = {
   successMessage: null,
 };
 
-// Async thunks
-
-// 1. Fetch all worker profiles with filters
 export const fetchWorkerProfiles = createAsyncThunk<
   WorkerProfile[] | WorkerProfilesResponse,
   WorkerProfileFilters | void,
@@ -42,7 +39,6 @@ export const fetchWorkerProfiles = createAsyncThunk<
     try {
       const queryParams = new URLSearchParams();
 
-      // Build query parameters - handle void filters
       if (filters && typeof filters === "object") {
         Object.entries(filters).forEach(([key, value]) => {
           if (value !== undefined && value !== null && value !== "") {
@@ -64,7 +60,6 @@ export const fetchWorkerProfiles = createAsyncThunk<
   },
 );
 
-// 2. Fetch single worker profile by ID
 export const fetchWorkerProfileById = createAsyncThunk<
   WorkerProfile,
   string,
@@ -83,7 +78,6 @@ export const fetchWorkerProfileById = createAsyncThunk<
   },
 );
 
-// 3. Fetch current user's worker profile by filtering
 export const fetchUserWorkerProfile = createAsyncThunk<
   WorkerProfile | null,
   string,
@@ -92,13 +86,8 @@ export const fetchUserWorkerProfile = createAsyncThunk<
   "workerProfiles/fetchUserWorkerProfile",
   async (userId, { rejectWithValue }) => {
     try {
-      const response = await api.get("/workers/profiles/list/");
+      const response = await api.get("/workers/profiles/list/?page_size=100");
       const profiles = Array.isArray(response) ? response : response.data || [];
-
-      console.log("Fetching user worker profile for userId:", userId);
-      console.log("Profiles fetched:", profiles.length);
-
-      // Find the profile that belongs to the current user
 
       const userProfile = profiles.find((profile: any) => {
         if (typeof profile.user === "string") {
@@ -110,14 +99,11 @@ export const fetchUserWorkerProfile = createAsyncThunk<
       });
 
       if (!userProfile) {
-        console.log("No worker profile found for user:", userId);
         return null;
       }
 
-      console.log("Found user worker profile:", userProfile);
       return userProfile;
     } catch (error: any) {
-      console.error("Fetch user worker profile error:", error);
       return rejectWithValue(
         error?.message || "Failed to fetch user worker profile",
       );
@@ -125,7 +111,6 @@ export const fetchUserWorkerProfile = createAsyncThunk<
   },
 );
 
-// 4. Create worker profile
 export const createWorkerProfile = createAsyncThunk<
   WorkerProfile,
   CreateWorkerProfileData,
@@ -138,23 +123,16 @@ export const createWorkerProfile = createAsyncThunk<
   "workerProfiles/createWorkerProfile",
   async (profileData, { rejectWithValue }) => {
     try {
-      console.log("Sending worker profile data:", profileData);
       const response = await api.post("/workers/profiles/", profileData);
-      console.log("Worker profile created successfully:", response);
       return response.data || response;
     } catch (error: any) {
-      console.error("Create worker profile error:", error);
-
-      // Handle specific error cases
       if (error.status === 400) {
-        // Check for duplicate profile error
         if (error.message && error.message.includes("already exists")) {
           return rejectWithValue(
             "You already have a worker profile. Please refresh the page.",
           );
         }
 
-        // Handle validation errors
         if (error?.data && typeof error.data === "object") {
           const fieldErrors: Record<string, string[]> = {};
           let hasFieldErrors = false;
@@ -192,7 +170,6 @@ export const createWorkerProfile = createAsyncThunk<
   },
 );
 
-// 5. Update worker profile
 export const updateWorkerProfile = createAsyncThunk<
   WorkerProfile,
   { profileId: string; data: UpdateWorkerProfileData },
@@ -224,11 +201,22 @@ export const updateWorkerProfile = createAsyncThunk<
   },
 );
 
-// Worker profiles slice
 const workerProfilesSlice = createSlice({
   name: "workerProfiles",
   initialState,
   reducers: {
+    loadWorkerProfileFromStorage: (state) => {
+      if (typeof window !== "undefined") {
+        const storedProfile = sessionStorage.getItem("userWorkerProfile");
+        if (storedProfile) {
+          try {
+            state.userProfile = JSON.parse(storedProfile);
+          } catch (e) {
+            sessionStorage.removeItem("userWorkerProfile");
+          }
+        }
+      }
+    },
     clearWorkerProfiles: (state) => {
       state.profiles = [];
       state.error = null;
@@ -269,7 +257,6 @@ const workerProfilesSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Fetch worker profiles
     builder
       .addCase(fetchWorkerProfiles.pending, (state) => {
         state.loading = true;
@@ -277,8 +264,6 @@ const workerProfilesSlice = createSlice({
       })
       .addCase(fetchWorkerProfiles.fulfilled, (state, action) => {
         state.loading = false;
-
-        // Handle both direct array response and object with data property
         if (Array.isArray(action.payload)) {
           state.profiles = action.payload;
         } else if (
@@ -293,7 +278,6 @@ const workerProfilesSlice = createSlice({
         } else {
           state.profiles = [];
         }
-
         if (typeof window !== "undefined") {
           sessionStorage.setItem(
             "workerProfiles",
@@ -306,7 +290,6 @@ const workerProfilesSlice = createSlice({
         state.error = action.payload as string;
       });
 
-    // Fetch worker profile by ID
     builder
       .addCase(fetchWorkerProfileById.pending, (state) => {
         state.loading = true;
@@ -321,7 +304,6 @@ const workerProfilesSlice = createSlice({
         state.error = action.payload as string;
       });
 
-    // Fetch user worker profile
     builder
       .addCase(fetchUserWorkerProfile.pending, (state) => {
         state.loading = true;
@@ -330,7 +312,6 @@ const workerProfilesSlice = createSlice({
       .addCase(fetchUserWorkerProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.userProfile = action.payload;
-
         if (typeof window !== "undefined") {
           if (action.payload) {
             sessionStorage.setItem(
@@ -347,7 +328,6 @@ const workerProfilesSlice = createSlice({
         state.error = action.payload as string;
       });
 
-    // Create worker profile
     builder
       .addCase(createWorkerProfile.pending, (state) => {
         state.loading = true;
@@ -357,9 +337,8 @@ const workerProfilesSlice = createSlice({
       .addCase(createWorkerProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.profiles.unshift(action.payload);
-        state.userProfile = action.payload; // Set as user's profile
+        state.userProfile = action.payload;
         state.successMessage = "Worker profile created successfully";
-
         if (typeof window !== "undefined") {
           sessionStorage.setItem(
             "workerProfiles",
@@ -379,7 +358,6 @@ const workerProfilesSlice = createSlice({
             : "Failed to create worker profile";
       });
 
-    // Update worker profile
     builder
       .addCase(updateWorkerProfile.pending, (state) => {
         state.loading = true;
@@ -395,14 +373,10 @@ const workerProfilesSlice = createSlice({
           state.profiles[index] = action.payload;
         }
         state.currentProfile = action.payload;
-
-        // Update user profile if it matches
         if (state.userProfile?.id === action.payload.id) {
           state.userProfile = action.payload;
         }
-
         state.successMessage = "Worker profile updated successfully";
-
         if (typeof window !== "undefined") {
           sessionStorage.setItem(
             "workerProfiles",
@@ -435,6 +409,7 @@ export const {
   setFilters,
   clearFilters,
   setPagination,
+  loadWorkerProfileFromStorage,
 } = workerProfilesSlice.actions;
 
 export default workerProfilesSlice;

@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import Image from "next/image";
 import {
   Menu,
   Search,
@@ -10,9 +11,9 @@ import {
   X,
 } from "lucide-react";
 
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
-import { AppDispatch } from "@/Redux/Store/Store";
+import { AppDispatch, RootState } from "@/Redux/Store/Store";
 
 import api from "@/lib/axios";
 
@@ -30,6 +31,7 @@ const Navbar = () => {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
+  const user = useSelector((state: RootState) => state.auth.user);
 
   const router = useRouter();
 
@@ -66,8 +68,14 @@ const Navbar = () => {
             </button>
 
             <div className="flex items-center gap-2 select-none">
-              <div className="w-6 h-6 bg-gradient-to-br from-blue-700 to-blue-800 rounded-lg flex items-center justify-center">
-                <span className="text-white text-xs font-semibold">A</span>
+              <div className="w-6 h-6 rounded-full overflow-hidden">
+                <Image
+                  src="/logo.jpeg"
+                  alt="KaziBuddy"
+                  width={24}
+                  height={24}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <h1 className="text-lg font-semibold text-gray-900 tracking-tight">
                 Administration
@@ -124,10 +132,7 @@ const Navbar = () => {
             <div className="flex items-center gap-2">
               <div className="hidden md:flex flex-col items-end select-none">
                 <span className="text-xs font-semibold text-gray-900 leading-none">
-                  Admin User
-                </span>
-                <span className="text-[9px] text-gray-500">
-                  ID: YUQWRYWEQTEW
+                  {user?.full_name || user?.username || "Admin User"}
                 </span>
               </div>
 
@@ -135,11 +140,29 @@ const Navbar = () => {
                 aria-haspopup="true"
                 aria-expanded="false"
                 tabIndex={0}
-                className="flex items-center gap-1 p-1 rounded-lg hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex items-center gap-1 p-1 rounded-full overflow-hidden hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <div className="w-7 h-7 bg-gradient-to-br from-gray-700 to-gray-800 rounded-lg flex items-center justify-center">
-                  <User className="text-white w-3.5 h-3.5" />
-                </div>
+                {/*  */}
+                {(() => {
+                  const avatarUrl = user?.profile_photo_url || user?.profile_photo || user?.avatar || null;
+                  if (avatarUrl) {
+                    return (
+                      <img
+                        src={avatarUrl}
+                        alt={user?.full_name || user?.username || "Profile"}
+                        className="w-7 h-7 rounded-full object-cover"
+                      />
+                    );
+                  }
+
+                  const initial = (user?.full_name || user?.username || "A").charAt(0).toUpperCase();
+                  return (
+                    <div className="w-7 h-7 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-white font-semibold">
+                      {initial}
+                    </div>
+                  );
+                })()}
+
                 <ChevronDown className="text-gray-500 w-3.5 h-3.5 hidden sm:block" />
               </button>
             </div>

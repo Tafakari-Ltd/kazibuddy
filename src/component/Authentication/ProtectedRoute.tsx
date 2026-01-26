@@ -31,8 +31,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const [authorized, setAuthorized] = useState<null | boolean>(null);
 
   const { user, isAuthenticated: reduxIsAuthenticated } = useSelector((state: RootState) => state.auth);
+  
+  const { userProfile: reduxWorkerProfile } = useSelector((state: RootState) => state.workerProfiles || {} as any);
+  const authLoaded = useSelector((state: RootState) => state.auth?.authLoaded);
 
   useEffect(() => {
+    // Wait for auth initialization to complete before enforcing route guards.
+    if (!authLoaded) return;
     const sessionIsAuthenticated = sessionStorage.getItem("isAuthenticated") === "true";
     const isAuthenticated = reduxIsAuthenticated || sessionIsAuthenticated;
 
@@ -61,7 +66,18 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       const userRole = user.role || user.user_type;
       
      
-      const isProfileComplete = !!user.full_name; 
+      let hasStoredWorkerProfile = false;
+      if (reduxWorkerProfile) {
+        hasStoredWorkerProfile = true;
+      } else if (typeof window !== "undefined") {
+        try {
+          hasStoredWorkerProfile = !!sessionStorage.getItem("userWorkerProfile");
+        } catch (e) {
+          hasStoredWorkerProfile = false;
+        }
+      }
+
+      const isProfileComplete = !!user?.full_name || hasStoredWorkerProfile;
       
       const isVerified = user.is_verified || user.email_verified || user.is_active;
       const isSetupPage = searchParams.get("setup") === "1";

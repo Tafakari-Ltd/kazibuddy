@@ -13,6 +13,7 @@ import {
   LogOut,
   Home,
 } from "lucide-react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppDispatch } from "@/Redux/Store/Store";
 import api from "@/lib/axios";
@@ -62,8 +63,8 @@ const Navbar = () => {
           </button>
 
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-red-800 to-red-900 rounded-lg flex items-center justify-center">
-              <span className="text-white text-sm font-bold">EM</span>
+            <div className="w-8 h-8 rounded-full overflow-hidden">
+              <Image src="/logo.jpeg" alt="KaziBuddy" width={32} height={32} className="w-full h-full object-cover" />
             </div>
             <h1 className="text-sm font-semibold text-gray-900 tracking-tight">
               Employers portal
@@ -108,12 +109,7 @@ const Navbar = () => {
               <div className="flex items-center gap-3">
                 <div className="hidden lg:flex flex-col items-end">
                   {/* Truncated ID with hover tooltip */}
-                  <span
-                    className="text-xs text-gray-500 cursor-pointer"
-                    title={userId}
-                  >
-                    ID: {displayId}
-                  </span>
+                 
                   <span className="text-sm font-medium text-gray-800">
                     {user?.full_name}
                   </span>

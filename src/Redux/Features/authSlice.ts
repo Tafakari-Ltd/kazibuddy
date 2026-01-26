@@ -19,6 +19,7 @@ interface AuthState {
   error: string | null;
   successMessage: string | null;
   isVerified: boolean;
+  authLoaded: boolean;
 }
 
 const setAuthCookie = (token: string) => {
@@ -277,6 +278,7 @@ const initialState: AuthState = {
   user: null,
   successMessage: null,
   isVerified: false,
+  authLoaded: false,
 };
 
 const authSlice = createSlice({
@@ -297,6 +299,10 @@ const authSlice = createSlice({
         state.user = user && user !== "undefined" ? JSON.parse(user) : null;
         state.isAuthenticated = true;
       }
+      
+    },
+    setAuthLoaded: (state) => {
+      state.authLoaded = true;
     },
     logout: (state) => {
       state.accessToken = null;
@@ -340,8 +346,10 @@ const authSlice = createSlice({
         if (typeof window !== "undefined") {
            sessionStorage.setItem("user", JSON.stringify(action.payload));
         }
+        state.authLoaded = true;
       })
       .addCase(fetchUserProfile.rejected, (state) => {
+        state.authLoaded = true;
       })
       
       .addCase(loginWithGoogle.pending, (state) => {
@@ -433,5 +441,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { loadSession, logout, clearAuthState } = authSlice.actions;
+export const { loadSession, logout, clearAuthState, setAuthLoaded } = authSlice.actions;
 export default authSlice;
