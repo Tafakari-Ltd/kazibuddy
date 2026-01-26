@@ -2,14 +2,13 @@
 import React, { useRef, useEffect } from "react";
 import { Briefcase, MapPin, Loader2, X } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
+import Link from "next/link"; 
 
 import { setSearchVisibility } from "@/Redux/Features/SearchSlice";
 import { AppDispatch, RootState } from "@/Redux/Store/Store";
 
 const SearchModal = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const router = useRouter();
   const modalRef = useRef<HTMLDivElement>(null);
   
   const { jobs, loading } = useSelector((state: RootState) => state.jobs);
@@ -18,18 +17,15 @@ const SearchModal = () => {
   // Close when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // 1. If clicking inside the dropdown, do nothing (allow interaction)
       if (modalRef.current && modalRef.current.contains(event.target as Node)) {
         return;
       }
       
-      // 2. If clicking the Navbar Input/Form, do nothing (allow typing)
-    
+      // Check if clicking the Navbar Input/Form
       if ((event.target as Element).closest('#navbar-search-form')) {
           return;
       }
 
-      // 3. Otherwise, close the dropdown
       dispatch(setSearchVisibility(false));
     };
 
@@ -43,16 +39,8 @@ const SearchModal = () => {
 
   if (!isShown || !query.trim()) return null;
 
-  const handleJobClick = (jobId: string) => {
-    // Navigate to jobs page with specific Job ID to open
-    router.push(`/jobs?applyJobId=${jobId}`);
-    dispatch(setSearchVisibility(false));
-  };
-
-  const handleViewAll = () => {
-    router.push(`/jobs?q=${encodeURIComponent(query)}`);
-    dispatch(setSearchVisibility(false));
-  };
+  // Helper to close modal (used in Link onClick)
+  const closeSearch = () => dispatch(setSearchVisibility(false));
 
   return (
     <div 
@@ -76,41 +64,46 @@ const SearchModal = () => {
             
             <ul className="overflow-y-auto max-h-[400px]">
               {jobs.slice(0, 5).map((job) => (
-                <li
-                  key={job.id}
-                  onClick={() => handleJobClick(job.id)}
-                  className="flex items-center gap-3 p-3 hover:bg-red-50 cursor-pointer transition-colors border-b border-gray-50 last:border-0 group"
-                >
-                  <div className="bg-gray-100 p-2 rounded-lg text-gray-500 group-hover:bg-[#800000] group-hover:text-white transition-colors">
-                    <Briefcase className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-gray-900 truncate">{job.title}</h4>
-                    <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
-                      <span className="flex items-center gap-1 truncate">
-                        <MapPin className="w-3 h-3" />
-                        {job.location || job.location_text}
-                      </span>
-                      <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">
-                        {(job as any).job_type?.replace("_", " ")}
+                <li key={job.id} className="border-b border-gray-50 last:border-0">
+                  {/* ✅ 2. Use Link instead of onClick handler */}
+                  <Link 
+                    href={`/jobs?applyJobId=${job.id}`} 
+                    onClick={closeSearch}
+                    className="flex items-center gap-3 p-3 hover:bg-red-50 cursor-pointer transition-colors group"
+                  >
+                    <div className="bg-gray-100 p-2 rounded-lg text-gray-500 group-hover:bg-[#800000] group-hover:text-white transition-colors">
+                      <Briefcase className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-gray-900 truncate">{job.title}</h4>
+                      <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                        <span className="flex items-center gap-1 truncate">
+                          <MapPin className="w-3 h-3" />
+                          {job.location || job.location_text}
+                        </span>
+                        <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">
+                          {(job as any).job_type?.replace("_", " ")}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right whitespace-nowrap">
+                      <span className="text-[#800000] font-semibold text-xs md:text-sm">
+                        {job.budget_min ? `KSh ${Number(job.budget_min).toLocaleString()}` : 'Neg.'}
                       </span>
                     </div>
-                  </div>
-                  <div className="text-right whitespace-nowrap">
-                    <span className="text-[#800000] font-semibold text-xs md:text-sm">
-                      {job.budget_min ? `KSh ${Number(job.budget_min).toLocaleString()}` : 'Neg.'}
-                    </span>
-                  </div>
+                  </Link>
                 </li>
               ))}
             </ul>
             
-            <button
-              onClick={handleViewAll}
-              className="p-3 bg-gray-50 hover:bg-gray-100 text-[#800000] text-sm font-medium text-center border-t border-gray-100 transition-colors"
+            {/* ✅ 3. Use Link for the "View All" button as well */}
+            <Link
+              href={`/jobs?q=${encodeURIComponent(query)}`}
+              onClick={closeSearch}
+              className="p-3 bg-gray-50 hover:bg-gray-100 text-[#800000] text-sm font-medium text-center border-t border-gray-100 transition-colors block"
             >
               View all results for "{query}"
-            </button>
+            </Link>
           </div>
         )}
 

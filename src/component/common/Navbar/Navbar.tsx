@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, User, ChevronDown, Search, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation"; // 1. Import usePathname
 
 import DesktopNav from "../DesktopNav/DesktopNav";
 import MobileNav from "../MobileNav/MobileNav";
@@ -22,6 +22,7 @@ import { toast } from "sonner";
 const Navbar: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const pathname = usePathname(); // 2. Get current path
   
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { query } = useSelector((state: RootState) => state.search);
@@ -102,33 +103,34 @@ const Navbar: React.FC = () => {
           <DesktopNav />
         </nav>
 
-        {/* Search Input */}
-        <div className="hidden lg:block w-64 relative">
-          {/* Added ID here to detect clicks inside form */}
-          <form id="navbar-search-form" onSubmit={handleSearchSubmit} className="relative z-50">
-             <input
-                type="text"
-                placeholder="Search job"
-                value={query}
-                onChange={handleSearchChange}
-                onFocus={() => { if(query.trim()) dispatch(setSearchVisibility(true)) }}
-                className="w-full px-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-redish pr-8"
-            />
-            {query && (
-                <button 
-                    type="button"
-                    onClick={() => { dispatch(clearQuery()); dispatch(clearJobs()); dispatch(setSearchVisibility(false)); }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                    <X className="w-4 h-4" />
-                </button>
-            )}
-          </form>
-          
-          <div className="absolute w-[140%] -left-[20%] top-full pt-2"> 
-             <SearchModal />
-          </div>
-        </div>
+        {/* 3. Search Input - Condition: Only show if NOT on homepage */}
+        {pathname !== "/" && (
+            <div className="hidden lg:block w-64 relative">
+              <form id="navbar-search-form" onSubmit={handleSearchSubmit} className="relative z-50">
+                 <input
+                    type="text"
+                    placeholder="Search job"
+                    value={query}
+                    onChange={handleSearchChange}
+                    onFocus={() => { if(query.trim()) dispatch(setSearchVisibility(true)) }}
+                    className="w-full px-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-redish pr-8"
+                />
+                {query && (
+                    <button 
+                        type="button"
+                        onClick={() => { dispatch(clearQuery()); dispatch(clearJobs()); dispatch(setSearchVisibility(false)); }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                )}
+              </form>
+              
+              <div className="absolute w-[140%] -left-[20%] top-full pt-2"> 
+                 <SearchModal />
+              </div>
+            </div>
+        )}
 
         {/* CTA Buttons */}
         <div className="hidden md:flex items-center space-x-3 ml-4">
