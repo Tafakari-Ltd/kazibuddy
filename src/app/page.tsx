@@ -12,7 +12,7 @@ const page = () => {
       <Hotjobs />
       <Getstarted />
       <Testimonials />
-      <Footer />
+      
     </div>
   );
 };

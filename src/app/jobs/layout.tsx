@@ -8,7 +8,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
       <div>
         <div className="pt-[40px]">{children}</div>
       </div>
-      <Footer />
+      
     </div>
   );
 };

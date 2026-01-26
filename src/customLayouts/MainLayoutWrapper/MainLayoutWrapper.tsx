@@ -1,43 +1,29 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import React from "react";
 import { usePathname } from "next/navigation";
+import Navbar from "@/component/common/Navbar/Navbar";
+import Footer from "@/component/common/Footer/Footer";
 
-import NProgress from "nprogress";
-import "@/styles/nprogress.css";
+interface MainLayoutWrapperProps {
+  children: React.ReactNode;
+}
 
-import SearchModal from "@/component/SearchModal/SearchModal";
-import { RootState } from "@/Redux/Store/Store";
-import { Preloader } from "../Preloader/Preloader";
-
-import { Toaster } from "sonner";
-
-import AuthWatcher from "@/Redux/middleware/AuthWatcher";
-
-const MainLayoutWrapper = ({ children }: { children: React.ReactNode }) => {
-  const isShown = useSelector((state: RootState) => state.search.isShown);
-  const [loading, setLoading] = useState(true);
+const MainLayoutWrapper: React.FC<MainLayoutWrapperProps> = ({ children }) => {
   const pathname = usePathname();
 
-  useEffect(() => {
-    NProgress.start();
-    setLoading(true);
-
-    const timer = setTimeout(() => {
-      setLoading(false);
-      NProgress.done();
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [pathname]);
+  // Hide the global/common navbar on admin routes to avoid duplicate headers
+  const showGlobalNavbar = !(pathname && pathname.startsWith("/admin"));
 
   return (
-    <div>
-      {/* <AuthWatcher /> */}
-      {loading ? <Preloader /> : children}
-      {isShown && <SearchModal />}
-      <Toaster position="top-right" richColors closeButton />
+    <div className="flex flex-col min-h-screen w-full">
+      {showGlobalNavbar && <Navbar />}
+
+      <main className="flex-grow w-full">
+        {children}
+      </main>
+
+      <Footer />
     </div>
   );
 };

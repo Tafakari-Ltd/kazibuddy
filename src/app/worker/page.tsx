@@ -195,7 +195,7 @@ const WorkerDashboardPage = () => {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="px-6 md:px-12 py-8 bg-gray-50 min-h-screen">
       <div className="container mb-6">
         
         {/* Compact Header with Quick Actions */}
