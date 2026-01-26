@@ -9,6 +9,8 @@ export interface AvailabilitySchedule {
 export interface WorkerUserInfo {
   id: string;
   full_name: string;
+  // optional username (some API responses provide username)
+  username?: string;
   email: string;
 }
 
@@ -16,6 +18,8 @@ export interface WorkerUserInfo {
 export interface WorkerProfile {
   id: string;
   user: string | WorkerUserInfo;
+  // Optional profile photo (string URL or a File/Blob when coming from uploads)
+  profile_photo?: string | File | null;
   location: string;
   location_text: string;
   is_available: boolean;

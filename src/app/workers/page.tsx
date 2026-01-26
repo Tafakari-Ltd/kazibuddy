@@ -51,11 +51,15 @@ const WorkersListingPage = () => {
     let filtered = [...profiles];
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(p =>
-        p.bio.toLowerCase().includes(query) ||
-        p.location.toLowerCase().includes(query) ||
-        p.location_text.toLowerCase().includes(query)
-      );
+      filtered = filtered.filter(p => {
+        const userObj = typeof p.user === "string" ? undefined : p.user;
+        return (
+          (userObj?.full_name && userObj.full_name.toLowerCase().includes(query)) || // Search by Name
+          p.bio.toLowerCase().includes(query) ||
+          p.location.toLowerCase().includes(query) ||
+          p.location_text.toLowerCase().includes(query)
+        );
+      });
     }
     if (filters.location) filtered = filtered.filter(p => p.location === filters.location);
     if (filters.min_experience !== undefined) filtered = filtered.filter(p => p.years_experience >= filters.min_experience!);
@@ -100,7 +104,8 @@ const WorkersListingPage = () => {
   };
 
   const handleSendEmail = () => {
-    window.location.href = `mailto:worker@example.com?subject=Job Opportunity via KaziBuddy`;
+    const email = typeof selectedWorker?.user === "string" ? undefined : selectedWorker?.user?.email;
+    window.location.href = `mailto:${email || "worker@example.com"}?subject=Job Opportunity via KaziBuddy`;
     setShowContactModal(false);
   };
 
@@ -139,6 +144,9 @@ const WorkersListingPage = () => {
     );
   }
 
+  // Narrowed selected user's info for modal display (keeps updates reactive)
+  const selectedUser = selectedWorker ? (typeof selectedWorker.user === "string" ? undefined : selectedWorker.user) : undefined;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-red-50">
       {/* Hero Section */}
@@ -162,7 +170,7 @@ const WorkersListingPage = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder="Search workers..."
+                  placeholder="Search by name, skills, or location..."
                   className="w-full pl-10 pr-4 py-2.5 rounded-lg text-gray-900 border border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-transparent focus:outline-none"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -174,40 +182,40 @@ const WorkersListingPage = () => {
       </div>
 
       {/* Stats Bar */}
-<div className="">
-  <div className="container mx-auto px-4 py-8">
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-      {[
-        { icon: Users, value: stats.total, label: "Total Workers", iconColor: "text-red-600", borderColor: "border-red-100" },
-        { icon: CheckCircle, value: stats.available, label: "Available Now", iconColor: "text-green-600", borderColor: "border-green-100" },
-        { icon: Award, value: stats.verified, label: "Verified", iconColor: "text-blue-600", borderColor: "border-blue-100" },
-        { icon: MapPin, value: stats.cities, label: "Cities", iconColor: "text-purple-600", borderColor: "border-purple-100" },
-        { icon: DollarSign, value: `$${stats.avgRate}`, label: "Avg. Rate/hr", iconColor: "text-orange-600", borderColor: "border-orange-100" },
-        { icon: TrendingUp, value: stats.avgExperience, label: "Avg. Years Exp.", iconColor: "text-indigo-600", borderColor: "border-indigo-100" }
-      ].map((stat, index) => {
-        const Icon = stat.icon;
-        return (
-          <div
-            key={index}
-            className={`bg-white rounded-xl shadow-sm border ${stat.borderColor} hover:shadow-md transition-all duration-300 p-5 group`}
-          >
-            <div className="flex items-center justify-center mb-3">
-              <Icon className={`w-6 h-6 ${stat.iconColor}`} />
-            </div>
-            <div className="text-center">
-              <div className={`text-2xl font-bold ${stat.iconColor} mb-1`}>
-                {stat.value}
-              </div>
-              <div className="text-sm text-gray-600 font-medium">
-                {stat.label}
-              </div>
-            </div>
+      <div className="">
+        <div className="container mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            {[
+              { icon: Users, value: stats.total, label: "Total Workers", iconColor: "text-red-600", borderColor: "border-red-100" },
+              { icon: CheckCircle, value: stats.available, label: "Available Now", iconColor: "text-green-600", borderColor: "border-green-100" },
+              { icon: Award, value: stats.verified, label: "Verified", iconColor: "text-blue-600", borderColor: "border-blue-100" },
+              { icon: MapPin, value: stats.cities, label: "Cities", iconColor: "text-purple-600", borderColor: "border-purple-100" },
+              { icon: DollarSign, value: `$${stats.avgRate}`, label: "Avg. Rate/hr", iconColor: "text-orange-600", borderColor: "border-orange-100" },
+              { icon: TrendingUp, value: stats.avgExperience, label: "Avg. Years Exp.", iconColor: "text-indigo-600", borderColor: "border-indigo-100" }
+            ].map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <div
+                  key={index}
+                  className={`bg-white rounded-xl shadow-sm border ${stat.borderColor} hover:shadow-md transition-all duration-300 p-5 group`}
+                >
+                  <div className="flex items-center justify-center mb-3">
+                    <Icon className={`w-6 h-6 ${stat.iconColor}`} />
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-2xl font-bold ${stat.iconColor} mb-1`}>
+                      {stat.value}
+                    </div>
+                    <div className="text-sm text-gray-600 font-medium">
+                      {stat.label}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        );
-      })}
-    </div>
-  </div>
-</div>
+        </div>
+      </div>
 
       {/* Main Content  */}
       <div className="container mx-auto px-4 py-12">
@@ -299,7 +307,7 @@ const WorkersListingPage = () => {
           </div>
         </div>
 
-        {/* Continue with workers grid and modal... */}
+        {/* Workers Grid */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
@@ -332,18 +340,31 @@ const WorkersListingPage = () => {
             {filteredProfiles.map((profile) => {
               const isCurrentlyAvailable = isWorkerCurrentlyAvailable(profile);
               const completionColor = profile.profile_completion_percentage >= 80 ? "text-green-600" : profile.profile_completion_percentage >= 60 ? "text-yellow-600" : "text-red-600";
+              
+              // Narrow user union and extract name safely
+              const userObj = typeof profile.user === "string" ? undefined : profile.user;
+              const displayName = userObj?.full_name || userObj?.username || `Worker #${profile.id.substring(0, 6)}`;
+              const profileImage = profile.profile_photo || null;
 
               return (
                 <div key={profile.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-xl hover:border-red-200 transition-all duration-300 overflow-hidden group">
                   <div className="p-6 border-b border-gray-100 bg-gradient-to-br from-gray-50 to-white">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center shadow-lg">
-                          <User className="w-7 h-7 text-white" />
-                        </div>
+                        {profileImage ? (
+                          <img 
+                            src={typeof profileImage === 'string' ? profileImage : URL.createObjectURL(profileImage)} 
+                            alt={displayName}
+                            className="w-14 h-14 rounded-full object-cover shadow-lg border-2 border-white"
+                          />
+                        ) : (
+                          <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center shadow-lg text-white font-bold text-xl">
+                            {displayName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <div>
                           <h3 className="text-lg font-bold text-gray-900 group-hover:text-red-700 transition-colors">
-                            Worker #{profile.id.substring(0, 8)}
+                            {displayName}
                           </h3>
                           <div className="flex items-center gap-2 mt-1">
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${getVerificationColor(profile.verification_status)}`}>
@@ -428,8 +449,8 @@ const WorkersListingPage = () => {
         )}
       </div>
 
-      {/* Contact Modal */}
-      {showContactModal && selectedWorker && (
+  {/* Contact Modal */}
+  {showContactModal && selectedWorker && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
             <div className="p-6 border-b border-gray-200">
@@ -437,11 +458,13 @@ const WorkersListingPage = () => {
             </div>
             <div className="p-6">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center">
-                  <User className="w-8 h-8 text-white" />
+                  <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center text-white font-bold text-2xl">
+                  {(selectedUser?.full_name || "W").charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h4 className="font-bold text-lg">Worker #{selectedWorker.id.substring(0, 8)}</h4>
+                  <h4 className="font-bold text-lg">
+                    {selectedUser?.full_name || `Worker #${selectedWorker.id.substring(0, 6)}`}
+                  </h4>
                   <p className="text-sm text-gray-600">{selectedWorker.location}</p>
                 </div>
               </div>

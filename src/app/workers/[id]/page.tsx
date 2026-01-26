@@ -18,7 +18,6 @@ import {
   AlertCircle,
   Shield,
   Badge,
-  Star,
 } from "lucide-react";
 
 import { RootState } from "@/Redux/Store/Store";
@@ -182,6 +181,13 @@ const WorkerProfilePage = () => {
         ? "text-yellow-600"
         : "text-red-600";
 
+  // Name Logic
+  // Narrow user union and extract safely
+  const currentUser = typeof currentProfile.user === "string" ? undefined : currentProfile.user;
+  const displayName = currentUser?.full_name || `Worker #${currentProfile.id.substring(0, 8)}`;
+  const displayEmail = currentUser?.email || "worker@example.com";
+  const profileImage = currentProfile.profile_photo;
+
   return (
     <div className="px-6 md:px-12 py-10 bg-gray-50 min-h-screen">
       {/* Back Button */}
@@ -209,9 +215,19 @@ const WorkerProfilePage = () => {
             <div className="flex flex-col md:flex-row gap-6">
               {/* Profile Avatar */}
               <div className="flex-shrink-0">
-                <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center">
-                  <User className="w-12 h-12 text-red-600" />
-                </div>
+                {profileImage ? (
+                   <img 
+                     src={typeof profileImage === 'string' ? profileImage : URL.createObjectURL(profileImage)} 
+                     alt={displayName}
+                     className="w-24 h-24 rounded-full object-cover shadow-lg border-4 border-white"
+                   />
+                ) : (
+                  <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center">
+                    <span className="text-3xl font-bold text-red-600">
+                      {displayName.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Profile Info */}
@@ -219,7 +235,7 @@ const WorkerProfilePage = () => {
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                   <div>
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                      Worker #{currentProfile.id.substring(0, 8)}
+                      {displayName}
                     </h1>
 
                     {/* Status Badges */}
@@ -404,11 +420,13 @@ const WorkerProfilePage = () => {
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                  <User className="w-6 h-6 text-red-600" />
+                  <span className="text-lg font-bold text-red-600">
+                    {displayName.charAt(0).toUpperCase()}
+                  </span>
                 </div>
                 <div>
                   <h4 className="font-semibold">
-                    Worker #{currentProfile.id.substring(0, 8)}
+                    {displayName}
                   </h4>
                   <p className="text-sm text-gray-600">
                     {currentProfile.location}
@@ -435,7 +453,7 @@ const WorkerProfilePage = () => {
             {/* Contact Options */}
             <div className="space-y-3">
               <button
-                onClick={() => handleSendEmail("worker@example.com")}
+                onClick={() => handleSendEmail(displayEmail)}
                 className="w-full flex items-center justify-center gap-2 bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 transition-colors"
               >
                 <Mail className="w-5 h-5" />
