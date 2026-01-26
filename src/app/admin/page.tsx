@@ -1,13 +1,20 @@
 "use client";
 import React, { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Users, Briefcase, FileText, Building2, BriefcaseIcon, ArrowRight, TrendingUp, PlayCircle, Clock, Pause, Ban, CheckCircle, XCircle, Star, UserPlus } from "lucide-react";
+import { 
+  Users, Briefcase, FileText, Building2, BriefcaseIcon, 
+  ArrowRight, TrendingUp, PlayCircle, Clock, Pause, Ban, 
+  CheckCircle, XCircle, Star, UserPlus, UserCheck, 
+  HardHat, PlusCircle, LayoutDashboard
+} from "lucide-react";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/Redux/Store/Store";
 import { approveUser } from "@/Redux/Features/authSlice";
 import { JobApplicationApi } from "@/services/jobApplicationApi";
 import api from "@/lib/axios";
 import { toast } from "sonner";
+import { AnimatePresence } from "framer-motion";
+
 import ProtectedRoute from "@/component/Authentication/ProtectedRoute";
 import DashboardStatCard from "@/components/Admin/Dashboard/DashboardStatCard";
 import PendingApprovalsAlert from "@/components/Admin/Dashboard/PendingApprovalsAlert";
@@ -56,6 +63,9 @@ const AdminDashboardContent: React.FC = () => {
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  
+  // State for banner visibility
+  const [showBanner, setShowBanner] = useState(true);
 
   useEffect(() => {
     fetchDashboardData();
@@ -72,7 +82,7 @@ const AdminDashboardContent: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      // Fetch with large page_size to get accurate stats for charts/graphs
+    
       const results = await Promise.allSettled([
         api.get("/workers/profiles/list/?page_size=1000"),
         api.get("/adminpanel/employer-profiles/?page_size=1000"),
@@ -212,6 +222,19 @@ const AdminDashboardContent: React.FC = () => {
     }
   };
 
+  // Helper component for Quick Action Buttons
+  const QuickActionButton = ({ icon: Icon, label, onClick, colorClass }: any) => (
+    <button 
+      onClick={onClick}
+      className="flex flex-col items-center justify-center p-4 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all duration-200 group"
+    >
+      <div className={`p-3 rounded-full bg-gray-50 group-hover:bg-white group-hover:scale-110 transition-all duration-200 mb-3 ${colorClass}`}>
+        <Icon className="h-6 w-6" />
+      </div>
+      <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 text-center">{label}</span>
+    </button>
+  );
+
   return (
     <ProtectedRoute>
       <div className="px-6 md:px-12 py-10 bg-gray-50 min-h-screen">
@@ -251,11 +274,16 @@ const AdminDashboardContent: React.FC = () => {
           ) : (
             <>
               {/* Alert */}
-              <PendingApprovalsAlert 
-                pendingUsers={stats.pendingUsers}
-                pendingJobs={stats.pendingJobs}
-                pendingApplications={stats.pendingApplications}
-              />
+              <AnimatePresence>
+                {showBanner && (
+                  <PendingApprovalsAlert 
+                    pendingUsers={stats.pendingUsers}
+                    pendingJobs={stats.pendingJobs}
+                    pendingApplications={stats.pendingApplications}
+                    onClose={() => setShowBanner(false)}
+                  />
+                )}
+              </AnimatePresence>
 
               {/* Stats Grid */}
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
@@ -264,6 +292,56 @@ const AdminDashboardContent: React.FC = () => {
                 <DashboardStatCard title="Total jobs" value={stats.totalJobs} icon={<Briefcase className="h-5 w-5 text-green-700" />} color="green" delay={0.1} />
                 <DashboardStatCard title="Job applications" value={stats.totalApplications} icon={<FileText className="h-5 w-5 text-purple-700" />} color="purple" delay={0.15} />
                 <DashboardStatCard title="Job categories" value={stats.totalCategories} icon={<BriefcaseIcon className="h-5 w-5 text-orange-700" />} color="orange" delay={0.2} />
+              </div>
+
+              {/* Quick Actions Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <LayoutDashboard className="h-5 w-5 text-gray-400" />
+                  <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  {/* Approval Actions (Always visible) */}
+                  <QuickActionButton 
+                    icon={UserCheck} 
+                    label="Approve Users" 
+                    onClick={() => router.push("/admin/approve-users")}
+                    colorClass="text-blue-600"
+                  />
+                  <QuickActionButton 
+                    icon={BriefcaseIcon} 
+                    label="Approve Jobs" 
+                    onClick={() => router.push("/admin/approve-jobs")}
+                    colorClass="text-green-600"
+                  />
+                   <QuickActionButton 
+                    icon={FileText} 
+                    label="Approve Applications" 
+                    onClick={() => router.push("/admin/applications")}
+                    colorClass="text-purple-600"
+                  />
+                  
+                  {/* Management Actions  */}
+                  <QuickActionButton 
+                    icon={PlusCircle} 
+                    label="Create Job" 
+                    onClick={() => router.push("/admin/jobs/create")}
+                    colorClass="text-red-600"
+                  />
+                   <QuickActionButton 
+                    icon={HardHat} 
+                    label="Worker Performance" 
+                    onClick={() => router.push("/admin/workers/performance")}
+                    colorClass="text-orange-600"
+                  />
+                   <QuickActionButton 
+                    icon={TrendingUp} 
+                    label="Job Analytics" 
+                    onClick={() => router.push("/admin/jobs/analytics")}
+                    colorClass="text-teal-600"
+                  />
+                </div>
               </div>
 
               {/* Summary Cards */}

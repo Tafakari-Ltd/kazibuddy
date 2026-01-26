@@ -31,7 +31,7 @@ export default function RootLayout({
       <body className={`${outfit.variable} antialiased`}>
         <Providers>
           
-          <Suspense fallback={<div>Loading app...</div>}>
+          <Suspense >
           {/* <ChatLayoutWrapper>
             {children}
           </ChatLayoutWrapper>  */}
