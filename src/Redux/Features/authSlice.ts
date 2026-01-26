@@ -33,6 +33,17 @@ const removeAuthCookie = () => {
   }
 };
 
+export const fetchUserProfile = createAsyncThunk(
+  "auth/fetchUserProfile",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get("/accounts/me/");
+      return response as any;
+    } catch (err: any) {
+      return rejectWithValue(err?.message || "Failed to fetch profile");
+    }
+  }
+);
 
 export const registerUser = createAsyncThunk<
   { message: string; user_id: string },
@@ -201,13 +212,11 @@ export const loginWithGoogle = createAsyncThunk<
     }
 
     const res = await api.post("/v1/auth/google/", payload);
-
     const data = res as any;
 
-    // Check if user was just created and is pending approval (201 status)
     if (data.user_created && data.pending_approval) {
       return rejectWithValue(
-        "Account created successfully! Your account is pending admin approval. You will be notified via email once approved."
+        "Account created successfully! Your account is pending admin approval."
       );
     }
 
@@ -233,20 +242,14 @@ export const loginWithGoogle = createAsyncThunk<
 
     if (!accessToken) return rejectWithValue("Invalid response from server");
 
-    
-
-    // FETCH PROFILE to verify user is approved
     try {
-      const baseURL = process.env.NEXT_PUBLIC_BASE_URL || "";
-      const meResponse = await axios.get(`${baseURL}/accounts/me/`, {
+      const meResponse = await api.get("/accounts/me/", {
         headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      }) as any;
 
-      const userFromApi = meResponse.data;
-      user = { ...user, ...userFromApi };
+      user = { ...user, ...meResponse };
       userId = user.id || user.pk || userId;
 
-      // SUCCESS - User is approved, now persist tokens
       setAuthCookie(accessToken);
       if (typeof window !== "undefined") {
         sessionStorage.setItem("accessToken", accessToken);
@@ -255,41 +258,11 @@ export const loginWithGoogle = createAsyncThunk<
       }
 
     } catch (error: any) {
-      // Profile fetch failed - likely unapproved user
-      console.warn("Profile fetch failed - user may not be approved", error);
-
-      // Check if it's a 403 or 401 (unapproved/unauthorized)
-      if (error?.response?.status === 403 || error?.status === 403 ||
-        error?.response?.status === 401 || error?.status === 401) {
-        return rejectWithValue(
-          "Your account is pending admin approval. Please wait for approval before logging in."
-        );
-      }
-
-      // Other errors - reject without storing tokens
-      return rejectWithValue(
-        error?.response?.data?.message || error?.message || "Failed to verify account"
-      );
+       return rejectWithValue("Failed to fetch profile");
     }
 
     return { accessToken, refreshToken, userId, user, userCreated };
   } catch (err: any) {
-    // Make sure no tokens are stored on error
-    if (typeof window !== "undefined") {
-      sessionStorage.removeItem("accessToken");
-      sessionStorage.removeItem("refreshToken");
-      sessionStorage.removeItem("user");
-      removeAuthCookie();
-    }
-
-    // Handle 403 - Account pending approval
-    if (err?.status === 403 || err?.response?.status === 403) {
-      const message = err?.message || err?.response?.data?.message ||
-        "Your account is pending admin approval. Please wait for approval before logging in.";
-      return rejectWithValue(message);
-    }
-
-    // Handle other errors
     return rejectWithValue(err.message || "Google login failed");
   }
 });
@@ -343,11 +316,7 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-
-      .addCase(login.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
+      .addCase(login.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
         state.accessToken = action.payload.accessToken;
@@ -355,17 +324,26 @@ const authSlice = createSlice({
         state.userId = action.payload.userId;
         state.user = action.payload.user;
         state.isAuthenticated = true;
-
+        
         sessionStorage.setItem("accessToken", action.payload.accessToken);
-        sessionStorage.setItem("refreshToken", action.payload.refreshToken);
         sessionStorage.setItem("userId", action.payload.userId);
         sessionStorage.setItem("user", JSON.stringify(action.payload.user));
         sessionStorage.setItem("isAuthenticated", "true");
       })
-      .addCase(login.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
+      .addCase(login.rejected, (state, action) => { state.loading = false; state.error = action.payload as string; })
+
+      .addCase(fetchUserProfile.pending, (state) => {
       })
+      .addCase(fetchUserProfile.fulfilled, (state, action) => {
+        state.user = action.payload;
+        state.isAuthenticated = true;
+        if (typeof window !== "undefined") {
+           sessionStorage.setItem("user", JSON.stringify(action.payload));
+        }
+      })
+      .addCase(fetchUserProfile.rejected, (state) => {
+      })
+      
       .addCase(loginWithGoogle.pending, (state) => {
         state.loading = true;
         state.error = null;

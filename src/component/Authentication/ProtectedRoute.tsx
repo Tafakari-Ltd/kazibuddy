@@ -13,6 +13,7 @@ interface ProtectedRouteProps {
 const allowedUnauthenticatedPaths = [
   "/",
   "/jobs",
+  "/workers", // Explicitly allow the public workers listing
   "/auth/login",
   "/auth/signup",
   "/auth/signup/worker",
@@ -32,40 +33,45 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, isAuthenticated: reduxIsAuthenticated } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    // 1. Check basic authentication
     const sessionIsAuthenticated = sessionStorage.getItem("isAuthenticated") === "true";
     const isAuthenticated = reduxIsAuthenticated || sessionIsAuthenticated;
 
-    // 2. Check if path is allowed publicly
+    // 1. Public Path Check
     const isExactPublicPath = allowedUnauthenticatedPaths.includes(pathname);
     
-    // Allow dynamic job details pages: /jobs/[id]
-    // But block /jobs/users/..., /jobs/create, etc. if not logged in
+    // Dynamic Public Routes:
+   
     const isPublicJobPage = pathname.startsWith("/jobs/") && 
                             !pathname.includes("/users") && 
                             !pathname.includes("/create");
 
-    const isAllowed = isExactPublicPath || isPublicJobPage;
+   
+    const isPublicWorkerProfile = pathname.startsWith("/workers/");
+
+    const isAllowed = isExactPublicPath || isPublicJobPage || isPublicWorkerProfile;
 
     if (!isAuthenticated && !isAllowed) {
-      // Redirect to login if path is private
       router.replace(`/auth/login?returnTo=${encodeURIComponent(pathname)}`);
       setAuthorized(false);
       return;
     }
 
-    // Role-based Access Control & Profile Verification (Only runs if authenticated)
+    // 2. Authenticated Checks
     if (isAuthenticated && user) {
       const userRole = user.role || user.user_type;
-      const isProfileComplete = user.full_name && user.phone_number;
+      
+     
+      const isProfileComplete = !!user.full_name; 
+      
       const isVerified = user.is_verified || user.email_verified || user.is_active;
       const isSetupPage = searchParams.get("setup") === "1";
 
+      // Profile Completion Check
       if (!isProfileComplete && !user.is_superuser) {
         if (!isSetupPage) {
           if (userRole === "worker") router.replace("/worker?setup=1");
           else if (userRole === "employer") router.replace("/employer?setup=1");
-          else router.replace("/worker?setup=1");
+          else router.replace("/?setup=1"); // Generic fallback
           setAuthorized(false);
           return;
         }
@@ -73,6 +79,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         return;
       }
 
+      // Verification Check
       if (!isVerified && !user.is_superuser && !isSetupPage) {
         toast.info("Account pending approval. Please wait for verification.");
         if (userRole === "worker") router.replace("/worker?setup=1");
@@ -103,8 +110,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         }
       }
 
-      // Worker Routes Protection
-      if (pathname.startsWith("/worker")) {
+
+      if (pathname === "/worker" || (pathname.startsWith("/worker/") && !pathname.startsWith("/workers"))) {
         const isWorker = userRole === "worker" || userRole === "admin";
         if (!isWorker) {
           toast.error("Unauthorized access. Worker account required.");

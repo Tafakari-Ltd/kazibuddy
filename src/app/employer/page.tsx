@@ -32,8 +32,9 @@ import { useJobs } from "@/Redux/Functions/useJobs";
 import { RootState, AppDispatch } from "@/Redux/Store/Store";
 import { Application, ApplicationStage, Job, JobStatus } from "@/types/job.types";
 import { JobApplicationWithDetails, ApplicationListResponse } from "@/types/jobApplication.types";
-import { deleteJob, updateJobStatus } from "@/Redux/Features/jobsSlice";
+import { deleteJob } from "@/Redux/Features/jobsSlice";
 import { useCategories } from "@/Redux/Functions/useCategories";
+import { fetchUserProfile } from "@/Redux/Features/authSlice"; // Import this to refresh user state
 
 const TABS = [
   "Dashboard",
@@ -161,19 +162,25 @@ const EmployerDashboardPage = () => {
     }
   }, [userProfile]);
 
-  // Handle feedback
+  // Handle feedback and URL cleaning
   useEffect(() => {
     if (successMessage) {
       toast.success(typeof successMessage === "string" ? successMessage : "Success");
       handleClearState();
       setShowProfileModal(false);
       setShowEditModal(false);
+
+      
+      if (searchParams?.get("setup") === "1") {
+        dispatch(fetchUserProfile()); 
+        router.replace("/employer"); 
+      }
     }
     if (profileError && profileError !== "Employer profile not found") {
       toast.error(typeof profileError === "string" ? profileError : "An error occurred");
       handleClearState();
     }
-  }, [successMessage, profileError]);
+  }, [successMessage, profileError, searchParams, dispatch, router]);
 
   // Fetch applications
   const fetchEmployerApplications = async () => {
@@ -284,10 +291,7 @@ const EmployerDashboardPage = () => {
     if (!applicationToAdvance) return;
 
     try {
-      // TODO: Implement API call to update application stage
       toast.success(`Application advanced to ${newStage}`);
-      
-      // Update local state
       setApplications((prev) =>
         prev.map((app) =>
           app.id === applicationToAdvance.id
@@ -336,8 +340,6 @@ const EmployerDashboardPage = () => {
 
   const filteredJobs = useMemo(() => {
     let filtered = jobs;
-
-    // Filter by category
     if (selectedCategoryId) {
       filtered = filtered.filter((job: any) => {
         const catRaw = job?.category;
@@ -347,31 +349,18 @@ const EmployerDashboardPage = () => {
       });
     }
 
-    // Filter by status
     if (activeJobFilter !== "All") {
       filtered = filtered.filter((job) => {
-        if (activeJobFilter === "Pending") {
-         
-          return job.status === JobStatus.PENDING || job.admin_approved === false;
-        }
-        if (activeJobFilter === "Active") {
-          
-          return job.status === JobStatus.ACTIVE && job.admin_approved !== false;
-        }
-        if (activeJobFilter === "Rejected") {
-          return job.status === JobStatus.CANCELLED;
-        }
-        if (activeJobFilter === "Draft") {
-          return job.status === JobStatus.DRAFT;
-        }
+        if (activeJobFilter === "Pending") return job.status === JobStatus.PENDING || job.admin_approved === false;
+        if (activeJobFilter === "Active") return job.status === JobStatus.ACTIVE && job.admin_approved !== false;
+        if (activeJobFilter === "Rejected") return job.status === JobStatus.CANCELLED;
+        if (activeJobFilter === "Draft") return job.status === JobStatus.DRAFT;
         return job.status.toLowerCase() === activeJobFilter.toLowerCase();
       });
     }
-
     return filtered;
   }, [jobs, selectedCategoryId, activeJobFilter]);
 
-  // Loading state
   if (!isClient || (profileLoading && !userProfile)) {
     return (
       <div className="px-6 md:px-12 py-10 bg-gray-50 min-h-screen">
@@ -417,7 +406,6 @@ const EmployerDashboardPage = () => {
 
         {activeTab === "My Jobs" && (
           <div className="space-y-6">
-            {/* Job Status Filters */}
             <div className="flex flex-wrap gap-2 pb-2 border-b border-gray-200">
               {JOB_FILTERS.map((filter) => (
                 <button
@@ -449,7 +437,6 @@ const EmployerDashboardPage = () => {
 
         {activeTab === "Applications" && (
           <div className="space-y-6">
-            {/* Application Status Filters */}
             <div className="flex flex-wrap gap-2 pb-2 border-b border-gray-200">
               {APPLICATION_FILTERS.map((filter) => (
                 <button
@@ -482,7 +469,6 @@ const EmployerDashboardPage = () => {
         {activeTab === "Settings" && <SettingsView onEditProfile={() => setShowEditModal(true)} />}
       </div>
 
-      {/* Modals */}
       <EmployerProfileForm
         isOpen={showProfileModal || showEditModal}
         onClose={() => {
@@ -530,10 +516,7 @@ const EmployerDashboardPage = () => {
       <RejectApplicationModal
         isOpen={showRejectModal}
         onClose={() => setShowRejectModal(false)}
-        onConfirm={() => {
-          // TODO: Implement reject logic
-          setShowRejectModal(false);
-        }}
+        onConfirm={() => setShowRejectModal(false)}
         rejectionReason={rejectionReason}
         onReasonChange={setRejectionReason}
       />
@@ -549,7 +532,6 @@ const EmployerDashboardPage = () => {
         />
       )}
 
-      {/* Worker Profile Modal */}
       {applicationToView && (
         <WorkerProfileModal
           application={applicationToView}
@@ -569,7 +551,6 @@ const EmployerDashboardPage = () => {
         />
       )}
 
-      {/* Stage Advancement Modal */}
       {applicationToAdvance && (
         <StageAdvancementModal
           application={applicationToAdvance}

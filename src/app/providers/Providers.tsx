@@ -1,21 +1,30 @@
 "use client";
-import { Provider } from "react-redux";
+import { Provider, useDispatch } from "react-redux";
 import React, { useEffect } from "react";
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import { store } from "@/Redux/Store/Store";
-import { loadSession } from "@/Redux/Features/authSlice";
+import { store, AppDispatch } from "@/Redux/Store/Store";
+import { loadSession, fetchUserProfile } from "@/Redux/Features/authSlice";
 import { fetchUserWorkerProfile } from "@/Redux/Features/workerProfilesSlice";
 import { Toaster } from "sonner";
 
 function AuthInitializer({ children }: { children: React.ReactNode }) {
-  useEffect(() => {
-    store.dispatch(loadSession());
+  const dispatch = useDispatch<AppDispatch>();
 
-    const state = store.getState();
-    if (state.auth.isAuthenticated && state.auth.userId) {
-      store.dispatch(fetchUserWorkerProfile(state.auth.userId));
+  useEffect(() => {
+    dispatch(loadSession());
+
+    const token = sessionStorage.getItem("accessToken");
+    if (token) {
+      dispatch(fetchUserProfile()).then((action) => {
+         if (fetchUserProfile.fulfilled.match(action)) {
+            const user = action.payload;
+            if (user?.user_type === 'worker') {
+               dispatch(fetchUserWorkerProfile(user.id));
+            }
+         }
+      });
     }
-  }, []);
+  }, [dispatch]);
 
   return <>{children}</>;
 }
