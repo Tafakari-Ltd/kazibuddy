@@ -23,6 +23,26 @@ import { logout } from "@/Redux/Features/authSlice";
 import { useRouter } from "next/navigation";
 
 const Navbar = () => {
+  
+  const getInitials = (name?: string, username?: string) => {
+    const source = (name || username || "").trim();
+    if (!source) return "KB"; // Default fallback
+    
+    const parts = source.split(/\s+/).filter(Boolean);
+    
+    // If multiple names, take first letter of First Name + first letter of Last Name
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    
+    // If single name > 2 chars, take first two letters
+    if (parts[0].length >= 2) {
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+    
+    return parts[0][0].toUpperCase();
+  };
+
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
@@ -116,14 +136,16 @@ const Navbar = () => {
                 </div>
 
                 <div className="w-8 h-8 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center overflow-hidden">
-                  {user?.profile_photo_url ? (
-                    <img 
-                      src={user.profile_photo_url} 
-                      alt="Profile" 
+                  {user?.profile_photo_url || user?.profile_photo || user?.avatar ? (
+                    <img
+                      src={user?.profile_photo_url || user?.profile_photo || user?.avatar}
+                      alt={user?.full_name || user?.username || "Profile"}
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <User className="text-white w-4 h-4" />
+                    <div className="w-full h-full flex items-center justify-center text-white font-semibold text-sm">
+                      {getInitials(user?.full_name, user?.username)}
+                    </div>
                   )}
                 </div>
 

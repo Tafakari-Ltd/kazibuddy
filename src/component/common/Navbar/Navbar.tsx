@@ -21,6 +21,15 @@ import api from "@/lib/axios";
 import { toast } from "sonner";
 
 const Navbar: React.FC = () => {
+  // Helper to derive initials from full name or username (first + last initials)
+  const getInitials = (name?: string, username?: string) => {
+    const source = (name || username || "").trim();
+    if (!source) return "A";
+    const parts = source.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    if (parts[0].length >= 2) return parts[0].slice(0, 2).toUpperCase();
+    return parts[0][0].toUpperCase();
+  };
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const pathname = usePathname(); // 2. Get current path
@@ -196,7 +205,25 @@ const Navbar: React.FC = () => {
                 onClick={toggleProfileMenu}
                 className="flex items-center justify-between w-[60px] p-1 border border-neutral-300 rounded-sm text-purple-800 hover:text-redish focus:outline-none"
               >
-                <User className="w-5 h-5" />
+                {(() => {
+                  const avatarUrl = user?.profile_photo_url || user?.profile_photo || user?.avatar || null;
+                  if (avatarUrl) {
+                    return (
+                      <img
+                        src={avatarUrl}
+                        alt={user?.full_name || user?.username || "Profile"}
+                        className="w-6 h-6 rounded-full object-cover"
+                      />
+                    );
+                  }
+
+                  const initials = getInitials(user?.full_name, user?.username);
+                  return (
+                    <div className="w-6 h-6 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                      {initials}
+                    </div>
+                  );
+                })()}
                 <ChevronDown className={`w-5 h-5 transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
               </button>
 

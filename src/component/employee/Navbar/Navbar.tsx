@@ -22,6 +22,25 @@ import { logout } from "@/Redux/Features/authSlice";
 import { useRouter } from "next/navigation";
 
 const Navbar = () => {
+  // Updated to pick First and Last name initials
+  const getInitials = (name?: string, username?: string) => {
+    const source = (name || username || "").trim();
+    if (!source) return "KB"; 
+    
+    const parts = source.split(/\s+/).filter(Boolean);
+    
+    // First letter of First Name + First letter of Last Name
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    
+    if (parts[0].length >= 2) {
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+    
+    return parts[0][0].toUpperCase();
+  };
+  
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
@@ -54,13 +73,13 @@ const Navbar = () => {
       <div className="container flex items-center justify-between h-full">
         {/* Left Section */}
         <div className="flex items-center gap-6">
-          <button
+          {/* <button
             onClick={() => dispatch(openSidebar())}
             className="p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
             aria-label="Toggle sidebar"
           >
             <Menu className="text-gray-600 w-5 h-5" />
-          </button>
+          </button> */}
 
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full overflow-hidden">
@@ -115,8 +134,18 @@ const Navbar = () => {
                   </span>
                 </div>
 
-                <div className="w-8 h-8 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center">
-                  <User className="text-white w-4 h-4" />
+                <div className="w-8 h-8 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center overflow-hidden">
+                  {user?.profile_photo_url || user?.profile_photo || user?.avatar ? (
+                    <img
+                      src={user?.profile_photo_url || user?.profile_photo || user?.avatar}
+                      alt={user?.full_name || user?.username || "Profile"}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white font-semibold text-sm">
+                      {getInitials(user?.full_name, user?.username)}
+                    </div>
+                  )}
                 </div>
 
                 <ChevronDown

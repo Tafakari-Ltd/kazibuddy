@@ -50,6 +50,24 @@ const Navbar = () => {
     }
   };
 
+  // Updated to pick First and Last name initials
+  const getInitials = (name?: string, username?: string) => {
+    const source = (name || username || "").trim();
+    if (!source) return "KB"; 
+    
+    const parts = source.split(/\s+/).filter(Boolean);
+    
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    
+    if (parts[0].length >= 2) {
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+    
+    return parts[0][0].toUpperCase();
+  };
+
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-30 h-12 bg-white border-b border-gray-200 shadow-sm px-4">
@@ -57,16 +75,6 @@ const Navbar = () => {
 
         <div className="container h-full flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button
-              aria-label="Toggle menu"
-              onClick={() => {
-                dispatch(openSidebar());
-              }}
-              className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <Menu className="text-gray-700 w-4 h-4" />
-            </button>
-
             <div className="flex items-center gap-2 select-none">
               <div className="w-6 h-6 rounded-full overflow-hidden">
                 <Image
@@ -142,26 +150,26 @@ const Navbar = () => {
                 tabIndex={0}
                 className="flex items-center gap-1 p-1 rounded-full overflow-hidden hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {/*  */}
-                {(() => {
-                  const avatarUrl = user?.profile_photo_url || user?.profile_photo || user?.avatar || null;
-                  if (avatarUrl) {
-                    return (
-                      <img
-                        src={avatarUrl}
-                        alt={user?.full_name || user?.username || "Profile"}
-                        className="w-7 h-7 rounded-full object-cover"
-                      />
-                    );
-                  }
+                {/* */}
+                  {(() => {
+                    const avatarUrl = user?.profile_photo_url || user?.profile_photo || user?.avatar || null;
+                    if (avatarUrl) {
+                      return (
+                        <img
+                          src={avatarUrl}
+                          alt={user?.full_name || user?.username || "Profile"}
+                          className="w-7 h-7 rounded-full object-cover"
+                        />
+                      );
+                    }
 
-                  const initial = (user?.full_name || user?.username || "A").charAt(0).toUpperCase();
-                  return (
-                    <div className="w-7 h-7 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-white font-semibold">
-                      {initial}
-                    </div>
-                  );
-                })()}
+                    const initials = getInitials(user?.full_name, user?.username);
+                    return (
+                      <div className="w-7 h-7 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                        {initials}
+                      </div>
+                    );
+                  })()}
 
                 <ChevronDown className="text-gray-500 w-3.5 h-3.5 hidden sm:block" />
               </button>
@@ -198,30 +206,10 @@ const Navbar = () => {
         <div className="p-6">
           <h2 className="text-lg font-semibold mb-4">Menu</h2>
           <nav className="flex flex-col gap-3">
-            <a
-              href="#"
-              className="text-gray-700 hover:text-blue-600 font-medium"
-            >
-              Dashboard
-            </a>
-            <a
-              href="#"
-              className="text-gray-700 hover:text-blue-600 font-medium"
-            >
-              Users
-            </a>
-            <a
-              href="#"
-              className="text-gray-700 hover:text-blue-600 font-medium"
-            >
-              Reports
-            </a>
-            <a
-              href="#"
-              className="text-gray-700 hover:text-blue-600 font-medium"
-            >
-              Settings
-            </a>
+            <a href="#" className="text-gray-700 hover:text-blue-600 font-medium">Dashboard</a>
+            <a href="#" className="text-gray-700 hover:text-blue-600 font-medium">Users</a>
+            <a href="#" className="text-gray-700 hover:text-blue-600 font-medium">Reports</a>
+            <a href="#" className="text-gray-700 hover:text-blue-600 font-medium">Settings</a>
           </nav>
         </div>
       </div>
