@@ -1,10 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import {
-  Menu,
   Search,
-  User,
   Bell,
   Settings,
   ChevronDown,
@@ -12,32 +10,28 @@ import {
 } from "lucide-react";
 
 import { useDispatch, useSelector } from "react-redux";
-
 import { AppDispatch, RootState } from "@/Redux/Store/Store";
-
 import api from "@/lib/axios";
-
-import { openSidebar } from "@/Redux/Features/AdminSIdebarSlice";
-
 import { logout } from "@/Redux/Features/authSlice";
-
 import { useRouter } from "next/navigation";
-
 import { toast } from "sonner";
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
-
   const router = useRouter();
+
+  // Reset image error when user changes
+  useEffect(() => {
+    setImgError(false);
+  }, [user]);
 
   const handleLogout = async () => {
     const logoutUrl = "accounts/logout/";
-
     try {
       await api.post(logoutUrl, {});
       toast.success("You have been logged out successfully 👋");
@@ -50,23 +44,21 @@ const Navbar = () => {
     }
   };
 
+  const getInitials = (name?: string, username?: string) => {
+    const source = (name || username || "").trim();
+    if (!source) return "KB"; 
+    
+    const parts = source.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    if (parts[0].length >= 2) return parts[0].slice(0, 2).toUpperCase();
+    return parts[0][0].toUpperCase();
+  };
+
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-30 h-12 bg-white border-b border-gray-200 shadow-sm px-4">
-        {/* Left Section */}
-
         <div className="container h-full flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button
-              aria-label="Toggle menu"
-              onClick={() => {
-                dispatch(openSidebar());
-              }}
-              className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <Menu className="text-gray-700 w-4 h-4" />
-            </button>
-
             <div className="flex items-center gap-2 select-none">
               <div className="w-6 h-6 rounded-full overflow-hidden">
                 <Image
@@ -83,21 +75,17 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Center - Search (visible lg+) */}
           <div className="relative w-72 hidden lg:block">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
             <input
               type="search"
               aria-label="Search users, reports, and settings"
               placeholder="Search users, reports, settings..."
-              className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-gray-300 bg-gray-50 text-sm placeholder-gray-400
- focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-gray-300 bg-gray-50 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
             />
           </div>
 
-          {/* Right Section */}
           <nav className="flex items-center gap-1" aria-label="User navigation">
-            {/* Mobile Search Button */}
             <button
               aria-label="Toggle search"
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
@@ -106,7 +94,6 @@ const Navbar = () => {
               <Search className="text-gray-700 w-4 h-4" />
             </button>
 
-            {/* Notifications */}
             <button
               aria-label="View notifications"
               className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -117,7 +104,6 @@ const Navbar = () => {
               </span>
             </button>
 
-            {/* Settings */}
             <button
               aria-label="Settings"
               className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -125,10 +111,8 @@ const Navbar = () => {
               <Settings className="text-gray-700 w-4 h-4" />
             </button>
 
-            {/* Divider */}
             <div className="w-px h-5 bg-gray-300 mx-2" aria-hidden="true" />
 
-            {/* User Profile */}
             <div className="flex items-center gap-2">
               <div className="hidden md:flex flex-col items-end select-none">
                 <span className="text-xs font-semibold text-gray-900 leading-none">
@@ -142,32 +126,31 @@ const Navbar = () => {
                 tabIndex={0}
                 className="flex items-center gap-1 p-1 rounded-full overflow-hidden hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {/*  */}
-                {(() => {
-                  const avatarUrl = user?.profile_photo_url || user?.profile_photo || user?.avatar || null;
-                  if (avatarUrl) {
-                    return (
-                      <img
-                        src={avatarUrl}
-                        alt={user?.full_name || user?.username || "Profile"}
-                        className="w-7 h-7 rounded-full object-cover"
-                      />
-                    );
-                  }
+                  {(() => {
+                    const avatarUrl = user?.profile_photo_url || user?.profile_photo || user?.avatar || null;
+                    
+                    if (avatarUrl && !imgError) {
+                      return (
+                        <img
+                          src={avatarUrl}
+                          alt={user?.full_name || user?.username || "Profile"}
+                          className="w-7 h-7 rounded-full object-cover"
+                          onError={() => setImgError(true)}
+                        />
+                      );
+                    }
 
-                  const initial = (user?.full_name || user?.username || "A").charAt(0).toUpperCase();
-                  return (
-                    <div className="w-7 h-7 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-white font-semibold">
-                      {initial}
-                    </div>
-                  );
-                })()}
+                    return (
+                      <div className="w-7 h-7 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                        {getInitials(user?.full_name, user?.username)}
+                      </div>
+                    );
+                  })()}
 
                 <ChevronDown className="text-gray-500 w-3.5 h-3.5 hidden sm:block" />
               </button>
             </div>
 
-            {/* Actions */}
             <div className="flex items-center gap-1 ml-2">
               <button
                 type="button"
@@ -188,7 +171,6 @@ const Navbar = () => {
         </div>
       </header>
 
-      {/* Mobile Sidebar Menu */}
       <div
         className={`fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out
  ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}
@@ -198,35 +180,14 @@ const Navbar = () => {
         <div className="p-6">
           <h2 className="text-lg font-semibold mb-4">Menu</h2>
           <nav className="flex flex-col gap-3">
-            <a
-              href="#"
-              className="text-gray-700 hover:text-blue-600 font-medium"
-            >
-              Dashboard
-            </a>
-            <a
-              href="#"
-              className="text-gray-700 hover:text-blue-600 font-medium"
-            >
-              Users
-            </a>
-            <a
-              href="#"
-              className="text-gray-700 hover:text-blue-600 font-medium"
-            >
-              Reports
-            </a>
-            <a
-              href="#"
-              className="text-gray-700 hover:text-blue-600 font-medium"
-            >
-              Settings
-            </a>
+            <a href="#" className="text-gray-700 hover:text-blue-600 font-medium">Dashboard</a>
+            <a href="#" className="text-gray-700 hover:text-blue-600 font-medium">Users</a>
+            <a href="#" className="text-gray-700 hover:text-blue-600 font-medium">Reports</a>
+            <a href="#" className="text-gray-700 hover:text-blue-600 font-medium">Settings</a>
           </nav>
         </div>
       </div>
 
-      {/* Overlay for Mobile Sidebar */}
       {mobileMenuOpen && (
         <button
           aria-label="Close menu"
@@ -235,7 +196,6 @@ const Navbar = () => {
         />
       )}
 
-      {/* Mobile Search Overlay */}
       {mobileSearchOpen && (
         <div className="fixed inset-0 z-50 bg-white p-4 flex items-center shadow-lg">
           <Search className="text-gray-400 w-5 h-5 mr-3" />

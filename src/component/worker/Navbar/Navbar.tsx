@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { openSidebar } from "@/Redux/Features/SidebarSlice";
 import { RootState } from "@/Redux/Store/Store";
@@ -23,12 +23,27 @@ import { logout } from "@/Redux/Features/authSlice";
 import { useRouter } from "next/navigation";
 
 const Navbar = () => {
+  const getInitials = (name?: string, username?: string) => {
+    const source = (name || username || "").trim();
+    if (!source) return "KB"; 
+    
+    const parts = source.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    if (parts[0].length >= 2) return parts[0].slice(0, 2).toUpperCase();
+    return parts[0][0].toUpperCase();
+  };
+
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
   const user = useSelector((state: RootState) => state.auth.user);
 
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [user]);
 
   const handleLogout = async () => {
     try {
@@ -43,16 +58,13 @@ const Navbar = () => {
     }
   };
 
-  // Get user ID from auth state
   const userId = useSelector((state: RootState) => state.auth.userId) || user?.user_id;
   const displayId = userId ? userId.slice(0, 8) : "N/A";
 
   return (
     <div className="h-16 w-full bg-white border-b border-gray-200 px-6 fixed top-0 left-0 right-0 z-50 shadow-sm">
       <div className="container flex items-center justify-between h-full mx-auto">
-        {/* Left Section */}
         <div className="flex items-center gap-6">
-
           <button
             onClick={() => dispatch(openSidebar())}
             className="p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200 lg:hidden"
@@ -62,7 +74,6 @@ const Navbar = () => {
           </button>
 
           <div className="flex items-center gap-3">
-            {/* Worker Badge / Logo */}
             <div className="w-8 h-8 rounded-full overflow-hidden">
               <Image src="/logo.jpeg" alt="KaziBuddy" width={32} height={32} className="w-full h-full object-cover" />
             </div>
@@ -72,7 +83,6 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Center - Search */}
         <div className="hidden lg:flex relative w-96">
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -84,23 +94,18 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Right Section */}
         <div className="flex items-center gap-1">
-          {/* Notifications */}
           <button className="relative p-2.5 rounded-lg hover:bg-gray-50 transition-colors duration-200">
             <Bell className="text-gray-600 w-4 h-4" />
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
           </button>
 
-          {/* Settings */}
           <button className="p-2.5 rounded-lg hover:bg-gray-50 transition-colors duration-200 hidden md:block">
             <Settings className="text-gray-600 w-4 h-4" />
           </button>
 
-          {/* Divider */}
           <div className="w-px h-6 bg-gray-200 mx-2 hidden md:block"></div>
 
-          {/* User Dropdown */}
           <div className="relative">
             <button
               onClick={() => setUserDropdownOpen(!userDropdownOpen)}
@@ -108,22 +113,24 @@ const Navbar = () => {
             >
               <div className="flex items-center gap-3">
                 <div className="hidden lg:flex flex-col items-end">
-                  {/* Truncated ID with hover tooltip */}
-                 
                   <span className="text-sm font-medium text-gray-800">
                     {user?.full_name || "Worker"}
                   </span>
                 </div>
 
-                <div className="w-8 h-8 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center overflow-hidden">
-                  {user?.profile_photo_url ? (
-                    <img 
-                      src={user.profile_photo_url} 
-                      alt="Profile" 
+             
+                <div className="w-8 h-8 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center overflow-hidden">
+                  {(user?.profile_photo_url || user?.profile_photo || user?.avatar) && !imgError ? (
+                    <img
+                      src={user?.profile_photo_url || user?.profile_photo || user?.avatar}
+                      alt={user?.full_name || user?.username || "Profile"}
                       className="w-full h-full object-cover"
+                      onError={() => setImgError(true)}
                     />
                   ) : (
-                    <User className="text-white w-4 h-4" />
+                    <div className="w-full h-full flex items-center justify-center text-white font-semibold text-xs">
+                      {getInitials(user?.full_name, user?.username)}
+                    </div>
                   )}
                 </div>
 

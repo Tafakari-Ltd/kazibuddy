@@ -12,18 +12,20 @@ interface MainLayoutWrapperProps {
 const MainLayoutWrapper: React.FC<MainLayoutWrapperProps> = ({ children }) => {
   const pathname = usePathname();
 
-  // Hide the global/common navbar on admin routes to avoid duplicate headers
-  const showGlobalNavbar = !(pathname && pathname.startsWith("/admin"));
+  // Condition: Only show Navbar and Footer if the current path is exactly the homepage "/"
+  const isHomepage = pathname === "/";
 
   return (
     <div className="flex flex-col min-h-screen w-full">
-      {showGlobalNavbar && <Navbar />}
+      {/* Show Common Navbar ONLY on Homepage */}
+      {isHomepage && <Navbar />}
 
       <main className="flex-grow w-full">
         {children}
       </main>
 
-      <Footer />
+      {/* Show Footer ONLY on Homepage */}
+      {isHomepage && <Footer />}
     </div>
   );
 };
