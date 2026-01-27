@@ -1,14 +1,18 @@
+import React from "react";
 import Footer from "@/component/common/Footer/Footer";
 import Navbar from "@/component/common/Navbar/Navbar";
 
 const layout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div>
+    <div className="flex flex-col min-h-screen w-full">
       <Navbar />
-      <div>
-        <div className="pt-[40px]">{children}</div>
+      
+     
+      <div className="flex-grow pt-[40px]">
+        {children}
       </div>
       
+      <Footer />
     </div>
   );
 };

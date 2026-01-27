@@ -5,8 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, User, ChevronDown, Search, X } from "lucide-react";
-import { useRouter, usePathname } from "next/navigation"; // 1. Import usePathname
+import { Menu, ChevronDown, X } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation"; 
 
 import DesktopNav from "../DesktopNav/DesktopNav";
 import MobileNav from "../MobileNav/MobileNav";
@@ -21,24 +21,26 @@ import api from "@/lib/axios";
 import { toast } from "sonner";
 
 const Navbar: React.FC = () => {
-  // Helper to derive initials from full name or username (first + last initials)
+  // Helper to derive initials from full name or username
   const getInitials = (name?: string, username?: string) => {
     const source = (name || username || "").trim();
-    if (!source) return "A";
+    if (!source) return "KB";
     const parts = source.split(/\s+/).filter(Boolean);
-    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     if (parts[0].length >= 2) return parts[0].slice(0, 2).toUpperCase();
     return parts[0][0].toUpperCase();
   };
+
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const pathname = usePathname(); // 2. Get current path
+  const pathname = usePathname(); 
   
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { query } = useSelector((state: RootState) => state.search);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const authState = useSelector((state: RootState) => state.auth);
   const isAuthenticated = authState.isAuthenticated;
@@ -50,12 +52,19 @@ const Navbar: React.FC = () => {
     user?.role === "admin" ||
     user?.user_type === "admin";
 
+  const isEmployer = user?.user_type === "employer";
+
   useEffect(() => {
     dispatch(loadSession());
     dispatch(clearQuery());
     dispatch(setSearchVisibility(false));
     dispatch(clearJobs());
   }, [dispatch]);
+
+  // Reset image error when user changes
+  useEffect(() => {
+    setImgError(false);
+  }, [user]);
 
   const toggleProfileMenu = () => setIsProfileOpen((prev) => !prev);
 
@@ -115,14 +124,18 @@ const Navbar: React.FC = () => {
               className="w-full h-full object-cover"
               priority
             />
+            
           </div>
+          
 
-          {/* Show full brand name only on the homepage */}
-          {pathname === "/" && (
-            <span className="hidden sm:inline-block text-2xl font-extrabold text-maroon ml-2">
-              Kazi<span className="text-gray-800">Buddy</span>
-            </span>
-          )}
+          {/* Brand name: larger on homepage, slightly smaller on other pages */}
+          <span
+            className={`hidden sm:inline-block ml-2 ${
+              pathname === "/" ? "text-2xl font-extrabold text-maroon" : "text-lg font-bold text-maroon"
+            }`}
+          >
+            Kazi<span className="text-gray-800">Buddy</span>
+          </span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -130,7 +143,7 @@ const Navbar: React.FC = () => {
           <DesktopNav />
         </nav>
 
-        {/* 3. Search Input - Condition: Only show if NOT on homepage */}
+        {/* Search Input - Condition: Only show if NOT on homepage */}
         {pathname !== "/" && (
             <div className="hidden lg:block w-64 relative">
               <form id="navbar-search-form" onSubmit={handleSearchSubmit} className="relative z-50">
@@ -166,11 +179,15 @@ const Navbar: React.FC = () => {
               <button className="apply-button">Messages</button>
             </Link>
           )}
-          <Link href="/employer?postjob=1">
-            <button className="bg-[#800000] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#600000] transition-colors whitespace-nowrap">
-              Post Job
-            </button>
-          </Link>
+
+          {/* Post Job Button: Only visible if Authenticated AND (Employer OR Admin) */}
+          {isAuthenticated && (isEmployer || isAdmin) && (
+            <Link href="/employer?postjob=1">
+              <button className="bg-[#800000] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#600000] transition-colors whitespace-nowrap">
+                Post Job
+              </button>
+            </Link>
+          )}
 
           {isAuthenticated ? (
             <button className="apply-button" onClick={handleLogout}>
@@ -201,30 +218,33 @@ const Navbar: React.FC = () => {
 
           {isAuthenticated && (
             <div className="relative">
+              {/*  Clean, borderless button consistent with other navbars */}
               <button
                 onClick={toggleProfileMenu}
-                className="flex items-center justify-between w-[60px] p-1 border border-neutral-300 rounded-sm text-purple-800 hover:text-redish focus:outline-none"
+                className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 transition-colors focus:outline-none"
               >
                 {(() => {
                   const avatarUrl = user?.profile_photo_url || user?.profile_photo || user?.avatar || null;
-                  if (avatarUrl) {
+                  
+                  if (avatarUrl && !imgError) {
                     return (
                       <img
                         src={avatarUrl}
                         alt={user?.full_name || user?.username || "Profile"}
-                        className="w-6 h-6 rounded-full object-cover"
+                        className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                        onError={() => setImgError(true)}
                       />
                     );
                   }
 
-                  const initials = getInitials(user?.full_name, user?.username);
                   return (
-                    <div className="w-6 h-6 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                      {initials}
+                    <div className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-white font-semibold text-xs border border-gray-200">
+                      {getInitials(user?.full_name, user?.username)}
                     </div>
                   );
                 })()}
-                <ChevronDown className={`w-5 h-5 transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
+                
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
               </button>
 
               <AnimatePresence>
@@ -237,7 +257,6 @@ const Navbar: React.FC = () => {
                     className="absolute right-0 top-[64px] w-44 bg-white border border-gray-200 rounded-md shadow-md z-50"
                   >
                     <ul className="flex flex-col text-sm text-gray-700">
-                     
                        {(() => {
                         const items = [
                           { label: "Profile", href: "/profile" },

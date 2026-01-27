@@ -12,27 +12,20 @@ interface MainLayoutWrapperProps {
 const MainLayoutWrapper: React.FC<MainLayoutWrapperProps> = ({ children }) => {
   const pathname = usePathname();
 
-  // Check if the current route is an authentication route (login, signup, etc.)
-  const isAuthRoute = pathname?.startsWith("/auth");
-  
-  // Check if the current route is an admin route
-  const isAdminRoute = pathname?.startsWith("/admin");
-
-  // Show Navbar only if NOT admin and NOT auth
-  const showNavbar = !isAdminRoute && !isAuthRoute;
-
-
-  const showFooter = !isAuthRoute; 
+  // Condition: Only show Navbar and Footer if the current path is exactly the homepage "/"
+  const isHomepage = pathname === "/";
 
   return (
     <div className="flex flex-col min-h-screen w-full">
-      {showNavbar && <Navbar />}
+      {/* Show Common Navbar ONLY on Homepage */}
+      {isHomepage && <Navbar />}
 
       <main className="flex-grow w-full">
         {children}
       </main>
 
-      {showFooter && <Footer />}
+      {/* Show Footer ONLY on Homepage */}
+      {isHomepage && <Footer />}
     </div>
   );
 };
