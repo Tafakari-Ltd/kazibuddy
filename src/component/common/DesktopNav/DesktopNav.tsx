@@ -26,14 +26,14 @@ export const navItems: NavItem[] = [
     label: "Workers",
     href: "/workers",
   },
-  {
-    label: "Candidates",
-    submenu: [
-      { label: "Browse Jobs", href: "/jobs" },
-      { label: "Manage applications", href: "/jobs/users/applications/" },
-      { label: "Jobs Alert", href: "/jobs/users/alerts" },
-    ],
-  },
+  // {
+  //   label: "Candidates",
+  //   submenu: [
+  //     { label: "Browse Jobs", href: "/jobs" },
+  //     { label: "Manage applications", href: "/jobs/users/applications/" },
+  //     { label: "Jobs Alert", href: "/jobs/users/alerts" },
+  //   ],
+  // },
 ];
 
 const DesktopNav: React.FC = () => {
