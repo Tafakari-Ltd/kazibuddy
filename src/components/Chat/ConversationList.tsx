@@ -26,11 +26,11 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [searching, setSearching] = useState(false);
-  const [creating, setCreating] = useState(false);
 
+  // Filter conversations based on search AND filter type (All/Unread)
   const filteredConversations = conversations.filter((item) => {
-    const matchesSearch = item.otherParticipant.full_name
-      .toLowerCase()
+    const matchesSearch = item.otherParticipant?.full_name
+      ?.toLowerCase()
       .includes(searchQuery.toLowerCase());
     
     if (filterType === "unread") {
@@ -44,38 +44,39 @@ export const ConversationList: React.FC<ConversationListProps> = ({
       setSearchResults([]);
       return;
     }
-
     setSearching(true);
     try {
       const users = await ChatApi.searchUsers(query);
+      // Filter out self
       const filteredUsers = users.filter((u) => u.id !== currentUserId);
       setSearchResults(filteredUsers);
     } catch (error: any) {
-      toast.error(error.message || "Failed to search users");
+      setSearchResults([]);
     } finally {
       setSearching(false);
     }
   };
 
-  const handleCreateConversation = async (user: User) => {
-    setCreating(true);
-    try {
-      const conversation = await ChatApi.getOrCreateConversation(user.id);
-      onSelectConversation(conversation);
-      setShowNewChatModal(false);
-      setUserSearchQuery("");
-      setSearchResults([]);
-      toast.success(`Chat started with ${user.full_name}`);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to create conversation");
-    } finally {
-      setCreating(false);
-    }
+  const handleCreateConversation = (user: User) => {
+    // Construct local conversation object for immediate UI update
+    const newConv: Conversation = {
+      id: user.id,
+      participant_ids: [user.id],
+      participants: [user],
+      unread_count: 0,
+      updated_at: new Date().toISOString()
+    };
+    
+    onSelectConversation(newConv);
+    setShowNewChatModal(false);
+    setUserSearchQuery("");
+    setSearchResults([]);
+    toast.success(`Chat started with ${user.full_name}`);
   };
 
   return (
     <>
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full bg-white border-r border-gray-200">
         <div className="px-4 pt-3 pb-2 border-b border-gray-100">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-gray-900">Messaging</h2>
@@ -107,6 +108,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
             />
           </div>
 
+          {/* Restored Filters */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => setFilterType("all")}
@@ -165,6 +167,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
         </div>
       </div>
 
+      {/* New Chat Modal */}
       {showNewChatModal && (
         <div className="fixed inset-0 bg-black/60 flex items-start justify-center pt-20 z-50">
           <div className="bg-white rounded-lg w-full max-w-lg shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
@@ -216,12 +219,15 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                     <button
                       key={user.id}
                       onClick={() => handleCreateConversation(user)}
-                      disabled={creating}
                       className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
                     >
                       <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-[#CC1016] font-semibold overflow-hidden">
-                        {user.avatar ? (
-                          <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                        {user.avatar || user.profile_photo_url ? (
+                          <img 
+                            src={user.avatar || user.profile_photo_url} 
+                            alt="" 
+                            className="w-full h-full object-cover" 
+                          />
                         ) : (
                           user.full_name.charAt(0).toUpperCase()
                         )}
