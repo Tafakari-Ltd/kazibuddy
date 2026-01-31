@@ -5,82 +5,74 @@ import { useState } from "react";
 const testimonials = [
   {
     id: 1,
-    name: "Tiffany B.",
+    name: "Tiffany Brown",
     feedback:
       "David did an awesome job assembling crib and dresser for nursery. Really appreciate this! He cleaned up the area after his work, organized the boxes for easy disposal and went through the directions with us in the event we have to change crib settings.",
     service: "Furniture Assembly",
     rating: 5,
-    image: "https://randomuser.me/api/portraits/women/44.jpg",
     location: "Nairobi, Kenya",
   },
   {
     id: 2,
-    name: "Michael O.",
+    name: "Michael Omondi",
     feedback:
       "I was very pleased with John's work. He cleaned my apartment thoroughly and even cleaned under the furniture without being asked.",
     service: "House Cleaning",
     rating: 4,
-    image: "https://randomuser.me/api/portraits/men/32.jpg",
     location: "Mombasa, Kenya",
   },
   {
     id: 3,
-    name: "Sarah W.",
+    name: "Sarah Wanjiku",
     feedback:
       "The plumbing issue was fixed quickly and professionally. I'm glad I found someone reliable. Highly recommended!",
     service: "Plumbing",
     rating: 5,
-    image: "https://randomuser.me/api/portraits/women/68.jpg",
     location: "Kisumu, Kenya",
   },
   {
     id: 4,
-    name: "James K.",
+    name: "James Kamau",
     feedback:
       "The TV installation was quick and neatly done. Wires were hidden well, and the wall mount looks perfect!",
     service: "TV Installation",
     rating: 5,
-    image: "https://randomuser.me/api/portraits/men/51.jpg",
     location: "Nakuru, Kenya",
   },
   {
     id: 5,
-    name: "Angela D.",
+    name: "Angela David",
     feedback:
       "Very polite and helpful watchman. He kept the premises secure and reported any unusual activity. Felt safe the whole night.",
     service: "Security Services",
     rating: 5,
-    image: "https://randomuser.me/api/portraits/women/12.jpg",
     location: "Eldoret, Kenya",
   },
   {
     id: 6,
-    name: "Tony M.",
+    name: "Tony Mwangi",
     feedback:
       "Excellent cleaning service. Everything was spotless and smelled great. Will definitely book again!",
     service: "House Cleaning",
     rating: 4,
-    image: "https://randomuser.me/api/portraits/men/18.jpg",
     location: "Thika, Kenya",
   },
   {
     id: 7,
-    name: "Rita N.",
+    name: "Rita Njoroge",
     feedback:
       "They fixed the leaking sink super fast and didn't leave a mess. Very impressed by their professionalism.",
     service: "Plumbing",
     rating: 5,
-    image: "https://randomuser.me/api/portraits/women/52.jpg",
     location: "Machakos, Kenya",
   },
   {
     id: 8,
-    name: "Mark Z.",
+    name: "Mark Zephania",
     feedback:
       "My new bookshelf was assembled perfectly. Took less than an hour and everything feels sturdy. Great service!",
     service: "Furniture Assembly",
     rating: 5,
-    image: "https://randomuser.me/api/portraits/men/61.jpg",
     location: "Nyeri, Kenya",
   },
 ];
@@ -95,6 +87,58 @@ const StarRating = ({ rating }: { rating: number }) => {
           className={`${i < rating ? "text-amber-400 fill-amber-400" : "text-gray-300"} transition-colors`}
         />
       ))}
+    </div>
+  );
+};
+
+// Avatar component that generates initials from name
+const Avatar = ({ name, size = 14 }: { name: string; size?: number }) => {
+  // Get initials from name (first letter of first name and last name)
+  const getInitials = (fullName: string) => {
+    const names = fullName.split(" ");
+    if (names.length === 1) {
+      return names[0].charAt(0).toUpperCase();
+    }
+    return (
+      names[0].charAt(0).toUpperCase() +
+      names[names.length - 1].charAt(0).toUpperCase()
+    );
+  };
+
+  // Generate a consistent color based on the name
+  const getColorFromName = (fullName: string) => {
+    const colors = [
+      "bg-[#800000]", // Maroon
+      "bg-[#600000]", // Darker Maroon
+      "bg-amber-600",
+      "bg-amber-700",
+      "bg-amber-800",
+      "bg-gray-700",
+      "bg-gray-800",
+    ];
+
+    // Simple hash function to get consistent color for each name
+    let hash = 0;
+    for (let i = 0; i < fullName.length; i++) {
+      hash = fullName.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  };
+
+  const initials = getInitials(name);
+  const bgColor = getColorFromName(name);
+
+  return (
+    <div
+      className={`${bgColor} text-white rounded-sm flex items-center justify-center font-bold transition-all duration-300 group-hover:scale-110 group-hover:shadow-md`}
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        fontSize: `${size * 0.35}px`,
+      }}
+    >
+      {initials}
     </div>
   );
 };
@@ -130,12 +174,10 @@ const Testimonials = () => {
 
                 <div className="flex items-center gap-4 mb-4">
                   <div className="relative">
-                    <img
-                      src={testimonial.image}
-                      alt={testimonial.name}
-                      className="w-14 h-14 rounded-sm object-cover ring-2 ring-[#800000]/20 group-hover:ring-[#800000]/40 transition-all duration-300"
-                    />
-                    <div className="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-sm border-2 border-white"></div>
+                    <div className="relative">
+                      <Avatar name={testimonial.name} size={56} />
+                      <div className="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-sm border-2 border-white"></div>
+                    </div>
                   </div>
                   <div className="flex-1">
                     <h4 className="font-bold text-[#800000] text-lg group-hover:text-[#600000] transition-colors">
@@ -165,9 +207,8 @@ const Testimonials = () => {
                 </blockquote>
 
                 <div
-                  className={`mt-6 pt-4 border-t border-gray-100 transition-all duration-300 ${
-                    hoveredCard === testimonial.id ? "border-[#800000]/20" : ""
-                  }`}
+                  className={`mt-6 pt-4 border-t border-gray-100 transition-all duration-300 ${hoveredCard === testimonial.id ? "border-[#800000]/20" : ""
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-400 font-medium">
@@ -184,9 +225,8 @@ const Testimonials = () => {
               </div>
 
               <div
-                className={`h-1 bg-gradient-to-r from-[#800000] via-[#600000] to-amber-600 transform transition-transform duration-300 ${
-                  hoveredCard === testimonial.id ? "scale-x-100" : "scale-x-0"
-                } origin-left`}
+                className={`h-1 bg-gradient-to-r from-[#800000] via-[#600000] to-amber-600 transform transition-transform duration-300 ${hoveredCard === testimonial.id ? "scale-x-100" : "scale-x-0"
+                  } origin-left`}
               ></div>
             </div>
           ))}
