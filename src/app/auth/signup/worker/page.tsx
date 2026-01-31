@@ -276,10 +276,10 @@ const WorkerSignup: React.FC = () => {
           Back to account type
         </Link>
 
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+        <h2 className="text-3xl font-bold text-gray-900 mb-2 text-center">
           Sign Up as Worker
         </h2>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-600 mb-6 text-center">
           Let's get started, complete these easy steps
         </p>
 

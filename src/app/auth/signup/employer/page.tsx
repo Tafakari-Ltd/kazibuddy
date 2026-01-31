@@ -254,10 +254,10 @@ const EmployerSignup: React.FC = () => {
           Back to account type
         </Link>
 
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+        <h2 className="text-3xl font-bold text-gray-900 mb-2 text-center">
           Sign Up as Employer
         </h2>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-600 mb-6 text-center">
           Start hiring quality candidates today
         </p>
 

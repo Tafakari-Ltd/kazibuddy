@@ -187,7 +187,7 @@ const LoginPage: React.FC = () => {
                 strokeLinejoin="round"
                 strokeWidth={2}
                 d="M5 13l4 4L19 7"
-              />
+              />z
             </svg>
           </div>
           <div>
@@ -250,10 +250,10 @@ const LoginPage: React.FC = () => {
   return (
     <AuthLayout heroContent={heroContent}>
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+        <h2 className="text-3xl font-bold text-gray-900 mb-2 text-center"> 
           Log in and get productive
         </h2>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-600 mb-6 text-center">
           Use your social account to log in
         </p>
 
