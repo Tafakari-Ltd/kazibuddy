@@ -11,6 +11,7 @@ import { FormField } from "@/component/Authentication/FormField";
 import { GoogleAuthButton } from "@/component/Authentication/GoogleAuthButton";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { TermsOfUseModal } from "./TermsOfUse";
 
 interface IFormData {
   profile_photo?: File;
@@ -24,7 +25,6 @@ interface IFormData {
 
 const WorkerSignup: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  
 
   const { loading, error, successMessage } = useSelector(
     (state: RootState) => state.auth
@@ -43,6 +43,8 @@ const WorkerSignup: React.FC = () => {
   });
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   // Toast messages
   useEffect(() => {
@@ -61,7 +63,7 @@ const WorkerSignup: React.FC = () => {
         password: "",
         confirm_password: "",
       });
-      
+
       dispatch(clearAuthState());
     }
   }, [successMessage, dispatch]);
@@ -94,6 +96,12 @@ const WorkerSignup: React.FC = () => {
     e.preventDefault();
     setFieldErrors({});
 
+    // Add Terms validation for workers
+    if (!acceptedTerms) {
+      toast.error("You must accept the Terms of Use, Privacy Policy, and Community Code of Conduct to proceed.");
+      return;
+    }
+
     if (formData.password !== formData.confirm_password) {
       toast.error("Passwords do not match.");
       return;
@@ -107,7 +115,7 @@ const WorkerSignup: React.FC = () => {
     }
 
     try {
-      
+
       const resultAction = await dispatch(
         registerUser({
           ...formData,
@@ -143,15 +151,15 @@ const WorkerSignup: React.FC = () => {
                   }
                 }
               );
-              
+
               if (Object.keys(errors).length > 0) {
                 setFieldErrors(errors);
-                
+
                 // Check for specific email error
                 if (errors.email) {
                   toast.error(errors.email);
                 } else if (Object.keys(errors).includes('email')) {
-                   toast.error("This email address is already registered.");
+                  toast.error("This email address is already registered.");
                 } else {
                   toast.error(
                     `Please fix ${Object.keys(errors).length} error${Object.keys(errors).length > 1 ? "s" : ""} in the form`
@@ -161,20 +169,20 @@ const WorkerSignup: React.FC = () => {
               }
             }
           } catch (e) {
-          
+
           }
         }
-        
+
         // Handle non-field specific errors
         if (typeof errorPayload === 'string') {
-           if (errorPayload.toLowerCase().includes("email already exists") || errorPayload.toLowerCase().includes("user with this email already exists")) {
-             toast.error("This email address is already registered. Please use a different email or login.");
-             setFieldErrors(prev => ({...prev, email: "This email is already in use"}));
-           } else {
-             toast.error(errorPayload || "Registration failed");
-           }
+          if (errorPayload.toLowerCase().includes("email already exists") || errorPayload.toLowerCase().includes("user with this email already exists")) {
+            toast.error("This email address is already registered. Please use a different email or login.");
+            setFieldErrors(prev => ({ ...prev, email: "This email is already in use" }));
+          } else {
+            toast.error(errorPayload || "Registration failed");
+          }
         } else {
-           toast.error("Registration failed. Please try again.");
+          toast.error("Registration failed. Please try again.");
         }
       }
     } catch (err) {
@@ -183,7 +191,7 @@ const WorkerSignup: React.FC = () => {
     }
   };
 
-   const heroContent = (
+  const heroContent = (
     <>
       <h1 className="text-5xl font-bold mb-6 leading-tight">
         Start Your Job Search Journey
@@ -411,9 +419,53 @@ const WorkerSignup: React.FC = () => {
             />
           </div>
 
+          {/* Terms of Use Checkbox for Workers */}
+          <div className="pt-4 mt-4 border-t border-gray-200">
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="flex items-center h-5 mt-0.5">
+                  <input
+                    type="checkbox"
+                    id="terms-checkbox-worker"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-maroon focus:ring-maroon"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label
+                    htmlFor="terms-checkbox-worker"
+                    className="text-sm font-medium text-gray-900 cursor-pointer"
+                  >
+                    I agree to the KaziBuddy Terms of Use, Privacy Policy, and Community Code of Conduct
+                  </label>
+                  <p className="text-xs text-gray-500">
+                    By checking this box, you confirm that you have read, understood, and agree to all
+                    platform rules and your responsibilities as a worker.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowTermsModal(true)}
+                    className="text-xs text-maroon hover:underline flex items-center gap-1 mt-1"
+                  >
+                    Read full terms and conditions
+                  </button>
+                </div>
+              </div>
+
+              {!acceptedTerms && (
+                <div className="bg-red-50 p-3 rounded-md border border-red-200">
+                  <p className="text-sm text-red-700">
+                    You must accept the terms and conditions to create an account.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !acceptedTerms}
             className="w-full bg-maroon hover:bg-redish disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition-colors mt-6"
           >
             {loading ? "Creating Account..." : "Create Account"}
@@ -430,6 +482,17 @@ const WorkerSignup: React.FC = () => {
           </Link>
         </div>
       </div>
+
+      {/* Terms of Use Modal for Workers */}
+      <TermsOfUseModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        onAccept={() => {
+          setAcceptedTerms(true);
+          setShowTermsModal(false);
+        }}
+        userType="worker"
+      />
     </AuthLayout>
   );
 };

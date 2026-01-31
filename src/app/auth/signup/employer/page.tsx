@@ -11,7 +11,7 @@ import { FormField } from "@/component/Authentication/FormField";
 import { GoogleAuthButton } from "@/component/Authentication/GoogleAuthButton";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-
+import { TermsOfUseModal } from "./TermsOfUse";
 interface IFormData {
   profile_photo?: File;
   username: string;
@@ -29,6 +29,10 @@ const EmployerSignup: React.FC = () => {
   const { loading, error, successMessage } = useSelector(
     (state: RootState) => state.auth
   );
+
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   const router = useRouter();
 
@@ -62,7 +66,7 @@ const EmployerSignup: React.FC = () => {
         confirm_password: "",
         company_name: "",
       });
-      
+
       dispatch(clearAuthState());
     }
   }, [successMessage, dispatch]);
@@ -94,6 +98,11 @@ const EmployerSignup: React.FC = () => {
     e.preventDefault();
     setFieldErrors({});
 
+    if (!acceptedTerms) {
+      toast.error("You must accept the Terms of Use, Privacy Policy, and Community Code of Conduct to proceed.");
+      return;
+    }
+
     if (formData.password !== formData.confirm_password) {
       toast.error("Passwords do not match.");
       return;
@@ -107,7 +116,7 @@ const EmployerSignup: React.FC = () => {
     }
 
     try {
-      
+
       const resultAction = await dispatch(
         registerUser({
           ...formData,
@@ -160,7 +169,7 @@ const EmployerSignup: React.FC = () => {
     }
   };
 
- 
+
   const heroContent = (
     <>
       <h1 className="text-5xl font-bold mb-6 leading-tight">
@@ -397,7 +406,48 @@ const EmployerSignup: React.FC = () => {
               file={formData.profile_photo}
             />
           </div>
+          <div className="pt-4 mt-4 border-t border-gray-200">
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="flex items-center h-5 mt-0.5">
+                  <input
+                    type="checkbox"
+                    id="terms-checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-maroon focus:ring-maroon"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label
+                    htmlFor="terms-checkbox"
+                    className="text-sm font-medium text-gray-900 cursor-pointer"
+                  >
+                    I agree to the KaziBuddy Terms of Use, Privacy Policy, and Community Code of Conduct
+                  </label>
+                  <p className="text-xs text-gray-500">
+                    By checking this box, you confirm that you have read, understood, and agree to all
+                    platform rules and your responsibilities as an employer.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowTermsModal(true)}
+                    className="text-xs text-maroon hover:underline flex items-center gap-1 mt-1"
+                  >
+                    Read full terms and conditions
+                  </button>
+                </div>
+              </div>
 
+              {!acceptedTerms && (
+                <div className="bg-red-50 p-3 rounded-md border border-red-200">
+                  <p className="text-sm text-red-700">
+                    You must accept the terms and conditions to create an account.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
           <button
             type="submit"
             disabled={loading}
@@ -417,6 +467,15 @@ const EmployerSignup: React.FC = () => {
           </Link>
         </div>
       </div>
+      <TermsOfUseModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        onAccept={() => {
+          setAcceptedTerms(true);
+          setShowTermsModal(false);
+        }}
+        userType="employer"
+      />
     </AuthLayout>
   );
 };
